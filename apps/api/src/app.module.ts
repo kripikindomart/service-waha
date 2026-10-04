@@ -13,10 +13,14 @@ import { MessagesService } from './messages.service';
 import { MessagesController } from './messages.controller';
 import { MessagesProcessor } from './messages.processor';
 import { WebhooksController } from './webhooks.controller';
+import { MembersController } from './members.controller';
+import { MembersService } from './members.service';
+import { RolesController } from './roles.controller';
+import { RolesService } from './roles.service';
 
 @Module({
   imports: [JwtModule.register({ secret: process.env.JWT_SECRET ?? 'change-me', signOptions: { expiresIn: '12h' } }), BullModule.forRoot({ connection: { url: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379' } }), BullModule.registerQueue({ name: 'messages' })],
-  controllers: [HealthController, AuthController, InstancesController, MessagesController, WebhooksController],
-  providers: [PrismaService, AuthService, InstancesService, RedisService, PermissionGuard, MessagesService, MessagesProcessor],
+  controllers: [HealthController, AuthController, InstancesController, MessagesController, WebhooksController, MembersController, RolesController],
+  providers: [PrismaService, AuthService, InstancesService, RedisService, PermissionGuard, MessagesService, MessagesProcessor, MembersService, RolesService],
 })
 export class AppModule {}
