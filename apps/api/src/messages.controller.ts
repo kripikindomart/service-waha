@@ -11,4 +11,5 @@ class SendTextDto { @IsString() @MinLength(3) chatId!: string; @IsString() @MinL
 export class MessagesController {
   constructor(private readonly messages: MessagesService) {}
   @Post('text') @RequirePermissions('message.send') sendText(@Req() req: any, @Param('instanceId') instanceId: string, @Body() body: SendTextDto) { return this.messages.sendText(req.user, instanceId, body.chatId, body.body); }
+  @Post(':messageId/retry') @RequirePermissions('message.send') retry(@Req() req: any, @Param('instanceId') instanceId: string, @Param('messageId') messageId: string) { return this.messages.retry(req.user, instanceId, messageId); }
 }

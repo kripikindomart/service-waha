@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from './prisma.service';
@@ -15,5 +15,12 @@ export class MessagesService {
     const message = await this.db.message.create({ data: { tenantId: user.tenantId, conversationId: conversation.id, direction: 'OUTBOUND', body, status: 'PENDING' } });
     await this.queue.add('send-text', { messageId: message.id }, { attempts: 5, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 1000, removeOnFail: 5000 });
     return { id: message.id, status: message.status };
+  }
+
+  async retry(user: AuthUser, instanceId: string, messageId: string) {
+    const message = await this.db.message.findFirst({ where: { id: messageId, tenantId: user.tenantId, direction: 'OUTBOUND', conversation: { instanceId } }, include: { conversation: true } });
+    if (!message) throw new NotFoundException('message_not_found');
+    if (message.status !== 'FAILED') throw new BadRequestException('message_is_not_failed');
+    return this.sendText(user, instanceId, message.conversation.chatId, message.body ?? '');
   }
 }
