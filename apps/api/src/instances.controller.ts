@@ -14,4 +14,6 @@ export class InstancesController {
   @Post() @RequirePermissions('instance.create') create(@Req() req: any, @Body() body: CreateInstanceDto) { return this.instances.create(req.user, body.name); }
   @Post(':id/start') @RequirePermissions('instance.control') start(@Req() req: any, @Param('id') id: string) { return this.instances.start(req.user, id); }
   @Post(':id/stop') @RequirePermissions('instance.control') stop(@Req() req: any, @Param('id') id: string) { return this.instances.stop(req.user, id); }
+  @Get(':id/status') @RequirePermissions('instance.read') status(@Req() req: any, @Param('id') id: string) { return this.instances.status(req.user, id); }
+  @Get(':id/qr') @RequirePermissions('instance.read') qr(@Req() req: any, @Param('id') id: string) { return this.instances.qr(req.user, id); }
 }

@@ -17,6 +17,21 @@ export class InstancesService {
   }
   start(user: AuthUser, id: string) { return this.control(user, id, 'start'); }
   stop(user: AuthUser, id: string) { return this.control(user, id, 'stop'); }
+  async status(user: AuthUser, id: string) {
+    const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
+    if (!instance) throw new NotFoundException('instance_not_found');
+    const response = await this.waha.get(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`);
+    const status = String(response.data?.status ?? '').toUpperCase();
+    const mapped = status.includes('WORK') ? 'WORKING' : status.includes('START') ? 'STARTING' : status.includes('STOP') ? 'STOPPED' : instance.status;
+    if (mapped !== instance.status) await this.db.whatsappInstance.update({ where: { id }, data: { status: mapped as any } });
+    return response.data;
+  }
+  async qr(user: AuthUser, id: string) {
+    const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
+    if (!instance) throw new NotFoundException('instance_not_found');
+    const response = await this.waha.get(`/api/${encodeURIComponent(instance.wahaSession)}/auth/qr`);
+    return response.data;
+  }
   private async control(user: AuthUser, id: string, action: 'start' | 'stop') {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
