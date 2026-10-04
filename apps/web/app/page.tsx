@@ -1309,6 +1309,18 @@ function ModulePanel({
     return <InboxPanel collapsed={collapsed} token={token} />;
   if (module === "webhooks")
     return <WebhooksPanel collapsed={collapsed} token={token} />;
+  return <GenericModulePanel module={module} collapsed={collapsed} token={token} />;
+}
+
+function GenericModulePanel({
+  module,
+  collapsed,
+  token,
+}: {
+  module: string;
+  collapsed: boolean;
+  token: string;
+}) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
