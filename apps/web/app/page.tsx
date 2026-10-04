@@ -411,7 +411,7 @@ function Dashboard({
   }
   return (
     <main className="min-h-screen bg-[#f6f8fc] text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white md:pl-64">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 font-black text-white shadow-lg shadow-indigo-200">
@@ -432,17 +432,29 @@ function Dashboard({
           </button>
         </div>
       </header>
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-6 py-2 text-sm">
-          <span className="rounded-lg bg-indigo-50 px-4 py-2 font-semibold text-indigo-700">Overview</span>
-          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Inbox</span>
-          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Contacts</span>
-          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Automations</span>
-          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Team & roles</span>
-          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Usage</span>
+      <nav className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 bg-white md:block">
+        <div className="flex h-full flex-col px-4 py-6 text-sm">
+          <div className="flex items-center gap-3 px-3 pb-8">
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 font-black text-white">W</div>
+            <div><p className="font-bold tracking-tight text-slate-900">WhatsApp Gateway</p><p className="text-xs text-slate-400">Workspace admin</p></div>
+          </div>
+          <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Workspace</p>
+          <div className="space-y-1">
+            <span className="flex items-center gap-3 rounded-xl bg-indigo-50 px-3 py-2.5 font-semibold text-indigo-700">▦ <span>Overview</span></span>
+            <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">☷ <span>Inbox</span></span>
+            <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">◉ <span>Contacts</span></span>
+            <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">⌁ <span>Automations</span></span>
+          </div>
+          <p className="px-3 pb-2 pt-8 text-[11px] font-bold uppercase tracking-wider text-slate-400">Manage</p>
+          <div className="space-y-1">
+            <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">▣ <span>Team & roles</span></span>
+            <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">◌ <span>Usage & logs</span></span>
+            <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">⚙ <span>Settings</span></span>
+          </div>
+          <div className="mt-auto rounded-2xl bg-slate-50 p-4 text-xs text-slate-500"><p className="font-semibold text-slate-700">Gateway status</p><p className="mt-2 flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-emerald-500" />All systems operational</p></div>
         </div>
       </nav>
-      <div className="mx-auto max-w-7xl px-6 py-10">
+      <div className="mx-auto max-w-7xl px-6 py-10 md:ml-64">
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="text-sm font-medium text-indigo-600">Workspace</p>
