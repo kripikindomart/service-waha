@@ -7,8 +7,8 @@ nav[data-collapsed="true"] p { display: none; }
 .theme-icon { display: inline-block; width: 15px; height: 15px; border: 2px solid currentColor; border-radius: 50%; }
 .theme-icon-sun { box-shadow: 0 0 0 3px transparent, 0 -5px 0 -3px currentColor, 0 5px 0 -3px currentColor, 5px 0 0 -3px currentColor, -5px 0 0 -3px currentColor; }
 .theme-icon-moon { border-right-color: transparent; transform: rotate(-35deg); }
-.menu-icon { display: block; width: 15px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; position: relative; }
-.menu-icon::after { content: ""; position: absolute; left: 0; right: 0; top: 3px; border-top: 2px solid currentColor; }
+.sidebar-toggle-icon { display: block; width: 16px; height: 14px; border: 2px solid currentColor; border-radius: 3px; position: relative; }
+.sidebar-toggle-icon::after { content: ""; position: absolute; top: -2px; bottom: -2px; left: 4px; border-left: 2px solid currentColor; }
 .gateway-dark { background: #0b1220 !important; color: #e5e7eb !important; }
 .gateway-dark header, .gateway-dark nav { background: #111a2d !important; border-color: #24324a !important; }
 .gateway-dark .bg-white { background: #111a2d !important; }
