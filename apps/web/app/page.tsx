@@ -432,6 +432,16 @@ function Dashboard({
           </button>
         </div>
       </header>
+      <nav className="border-b border-white/10 bg-[#0c1428]">
+        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-6 py-2 text-sm">
+          <span className="rounded-lg bg-violet-500/15 px-4 py-2 font-semibold text-violet-200">Overview</span>
+          <span className="rounded-lg px-4 py-2 text-slate-400">Inbox</span>
+          <span className="rounded-lg px-4 py-2 text-slate-400">Contacts</span>
+          <span className="rounded-lg px-4 py-2 text-slate-400">Automations</span>
+          <span className="rounded-lg px-4 py-2 text-slate-400">Team & roles</span>
+          <span className="rounded-lg px-4 py-2 text-slate-400">Usage</span>
+        </div>
+      </nav>
       <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
