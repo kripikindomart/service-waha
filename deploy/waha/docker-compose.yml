@@ -1,0 +1,17 @@
+services:
+  waha:
+    image: ${WAHA_IMAGE:-devlikeapro/waha:2026.9.2}
+    container_name: servic-waha
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      # Keep WAHA private; the gateway/reverse proxy will be the public entrypoint.
+      - "127.0.0.1:${WAHA_PORT:-3000}:3000"
+    volumes:
+      - waha_sessions:/app/.sessions
+      - waha_files:/app/files
+
+volumes:
+  waha_sessions:
+  waha_files:
