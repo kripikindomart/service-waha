@@ -1118,10 +1118,10 @@ function WebhooksPanel({
     }
   }
   const eventOptions = [
-    "message",
-    "message.any",
-    "message.ack",
-    "session.status",
+    { name: "message", description: "Pesan masuk atau keluar. Wajib untuk menampilkan chat di Inbox." },
+    { name: "message.any", description: "Semua aktivitas pesan, termasuk pesan dari device dan pesan yang dikirim gateway." },
+    { name: "message.ack", description: "Perubahan status pengiriman: terkirim, delivered, dibaca, atau gagal." },
+    { name: "session.status", description: "Perubahan koneksi instance seperti starting, pairing, working, atau stopped." },
   ];
   return (
     <div
@@ -1220,15 +1220,16 @@ function WebhooksPanel({
                 </p>
                 {eventOptions.map((event) => (
                   <label
-                    key={event}
-                    className="flex items-center gap-2 text-sm text-slate-600"
+                    key={event.name}
+                    className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-100 p-3 text-sm text-slate-600 hover:bg-slate-50"
                   >
                     <input
                       type="checkbox"
-                      checked={form.events.includes(event)}
-                      onChange={() => toggleEvent(event)}
+                      checked={form.events.includes(event.name)}
+                      onChange={() => toggleEvent(event.name)}
+                      className="mt-0.5"
                     />
-                    {event}
+                    <span><span className="block font-semibold text-slate-800">{event.name}</span><span className="mt-0.5 block text-xs leading-5 text-slate-500">{event.description}</span></span>
                   </label>
                 ))}
               </div>
