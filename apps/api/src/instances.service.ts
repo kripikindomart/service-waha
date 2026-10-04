@@ -11,7 +11,9 @@ export class InstancesService {
   list(user: AuthUser) { return this.db.whatsappInstance.findMany({ where: { tenantId: user.tenantId }, orderBy: { createdAt: 'desc' } }); }
   async create(user: AuthUser, name: string) {
     const instance = await this.db.whatsappInstance.create({ data: { tenantId: user.tenantId, name, wahaSession: `${user.tenantId}-${name}` } });
-    await this.waha.post('/api/sessions', { name: instance.wahaSession, config: { noweb: { markOnline: true } } });
+    const webhookUrl = process.env.WAHA_WEBHOOK_URL;
+    const config = { noweb: { markOnline: true }, ...(webhookUrl ? { webhooks: [{ url: webhookUrl, events: ['message', 'message.any', 'message.ack', 'session.status'] }] } : {}) };
+    await this.waha.post('/api/sessions', { name: instance.wahaSession, config });
     await this.audit.log(user, 'instance.create', instance.id, { name });
     return instance;
   }
