@@ -463,7 +463,7 @@ function Dashboard({
           <div className="mt-auto rounded-2xl bg-slate-50 p-4 text-xs text-slate-500"><p className="font-semibold text-slate-700">Gateway status</p><p className="mt-2 flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-emerald-500" />All systems operational</p></div>
         </div>
       </nav>
-      {activeModule !== "overview" && <ModulePanel module={activeModule} collapsed={sidebarCollapsed} />}
+      {activeModule !== "overview" && <ModulePanel module={activeModule} collapsed={sidebarCollapsed} token={token} />}
       <div className={`${activeModule !== "overview" ? "hidden" : ""} ${sidebarCollapsed ? "md:ml-20 max-w-none" : "md:ml-64 max-w-7xl"} mx-0 px-6 py-10 transition-all`}>
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
@@ -612,17 +612,13 @@ function Dashboard({
   );
 }
 
-function ModulePanel({ module, collapsed }: { module: string; collapsed: boolean }) {
-  const modules: Record<string, { title: string; description: string; items: string[] }> = {
-    inbox: { title: "Inbox", description: "Kelola percakapan WhatsApp dari semua instance dalam satu tempat.", items: ["Conversation list", "Unread queue", "Quick reply"] },
-    contacts: { title: "Contacts", description: "Simpan dan kelola kontak pelanggan di workspace ini.", items: ["Contact directory", "Tags and segments", "Import contacts"] },
-    automations: { title: "Automations", description: "Bangun alur otomatis untuk pesan masuk dan keluar.", items: ["Trigger rules", "Templates", "Execution history"] },
-    team: { title: "Team & roles", description: "Atur anggota workspace dan permission berbasis role.", items: ["Members", "Roles", "Permission matrix"] },
-    usage: { title: "Usage & logs", description: "Pantau aktivitas gateway, pesan, webhook, dan audit log.", items: ["Message volume", "Webhook events", "Audit logs"] },
-    settings: { title: "Settings", description: "Konfigurasi workspace, API access, dan preferensi gateway.", items: ["Workspace profile", "API keys", "Webhook settings"] },
-  };
-  const current = modules[module] ?? modules.inbox;
-  return <div className={`${collapsed ? "md:ml-20" : "md:ml-64"} mx-auto max-w-5xl px-6 py-12 transition-all`}><div className="mb-8"><p className="text-sm font-semibold text-indigo-600">Workspace module</p><h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-900">{current.title}</h1><p className="mt-3 max-w-2xl text-slate-500">{current.description}</p></div><div className="grid gap-5 md:grid-cols-3">{current.items.map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="mb-5 h-10 w-10 rounded-xl bg-indigo-50" /><h2 className="font-semibold text-slate-900">{item}</h2><p className="mt-2 text-sm text-slate-500">Module ini siap dihubungkan ke API tenant.</p><button className="mt-5 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Buka modul</button></div>)}</div></div>;
+function ModulePanel({ module, collapsed, token }: { module: string; collapsed: boolean; token: string }) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { setLoading(true); const path = module === "inbox" ? "/conversations" : module === "team" ? "/members" : module === "usage" ? "/audit-logs" : ""; if (!path) { setData([]); setLoading(false); return; } request<any[]>(path, {}, token).then(setData).catch(() => setData([])).finally(() => setLoading(false)); }, [module, token]);
+  const meta: Record<string, [string, string]> = { inbox: ["Inbox", "Kelola percakapan WhatsApp dari semua instance."], contacts: ["Contacts", "Simpan dan kelola kontak pelanggan."], automations: ["Automations", "Bangun alur otomatis untuk pesan masuk dan keluar."], team: ["Team & roles", "Atur anggota workspace dan permission."], usage: ["Usage & logs", "Pantau aktivitas gateway dan audit log."], settings: ["Settings", "Konfigurasi workspace dan akses gateway."] };
+  const [title, description] = meta[module] ?? meta.inbox;
+  return <div className={`${collapsed ? "md:ml-20" : "md:ml-64"} mx-auto max-w-5xl px-6 py-12 transition-all`}><div className="mb-8"><p className="text-sm font-semibold text-indigo-600">Workspace module</p><h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-900">{title}</h1><p className="mt-3 max-w-2xl text-slate-500">{description}</p></div><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 px-6 py-4"><p className="text-sm text-slate-500">{loading ? "Memuat data..." : `${data.length} record ditemukan`}</p></div>{!loading && data.length === 0 ? <div className="p-12 text-center text-slate-500">Belum ada data untuk modul ini.</div> : <div className="divide-y divide-slate-100">{data.map((item) => <div key={item.id} className="flex items-center justify-between px-6 py-4"><div><p className="font-semibold text-slate-900">{item.user?.name ?? item.action ?? item.chatId ?? item.email ?? "Record"}</p><p className="mt-1 text-xs text-slate-500">{item.user?.email ?? item.resource ?? item.body ?? item.instance?.name ?? item.status ?? ""}</p></div><span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{item.status ?? item.action ?? "Active"}</span></div>)}</div>}</section></div>;
 }
 
 function Field({
