@@ -14,7 +14,7 @@ export class MessagesProcessor extends WorkerHost {
     if (!message || !message.body) return;
     try {
       const result = await this.waha.post('/api/sendText', { session: message.conversation.instance.wahaSession, chatId: normalizeChatId(message.conversation.chatId), text: message.body });
-      await this.db.message.update({ where: { id: message.id }, data: { status: 'SENT', wahaMessageId: result.data?.id ?? result.data?.message?.id, rawPayload: result.data } });
+      await this.db.message.update({ where: { id: message.id }, data: { status: 'SENT', wahaMessageId: result.data?.key?.id ?? result.data?.id ?? result.data?.message?.id, rawPayload: result.data } });
     } catch (error: any) {
       await this.db.message.update({ where: { id: message.id }, data: { status: 'FAILED', rawPayload: { error: error?.message ?? 'send_failed' } } });
       throw error;
