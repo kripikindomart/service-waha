@@ -11,7 +11,7 @@ export class InstancesService {
   list(user: AuthUser) { return this.db.whatsappInstance.findMany({ where: { tenantId: user.tenantId }, orderBy: { createdAt: 'desc' } }); }
   async create(user: AuthUser, name: string) {
     const instance = await this.db.whatsappInstance.create({ data: { tenantId: user.tenantId, name, wahaSession: `${user.tenantId}-${name}` } });
-    await this.waha.post('/api/sessions', { name: instance.wahaSession });
+    await this.waha.post('/api/sessions', { name: instance.wahaSession, config: { noweb: { markOnline: true } } });
     await this.audit.log(user, 'instance.create', instance.id, { name });
     return instance;
   }
