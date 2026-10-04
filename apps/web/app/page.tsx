@@ -456,7 +456,7 @@ function Dashboard({
           <div className="mt-auto rounded-2xl bg-slate-50 p-4 text-xs text-slate-500"><p className="font-semibold text-slate-700">Gateway status</p><p className="mt-2 flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-emerald-500" />All systems operational</p></div>
         </div>
       </nav>
-      <div className={`${sidebarCollapsed ? "md:ml-20" : "md:ml-64"} mx-auto max-w-7xl px-6 py-10 transition-all`}>
+      <div className={`${sidebarCollapsed ? "md:ml-20 max-w-none" : "md:ml-64 max-w-7xl"} mx-0 px-6 py-10 transition-all`}>
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="text-sm font-medium text-indigo-600">Workspace</p>
