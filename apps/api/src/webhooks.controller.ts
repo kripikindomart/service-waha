@@ -32,7 +32,9 @@ export class WebhooksController {
     const text = payload?.body ?? payload?.text;
     if (chatId && text && event.toLowerCase().includes('message')) {
       const conversation = await this.db.conversation.upsert({ where: { instanceId_chatId: { instanceId: instance.id, chatId } }, update: {}, create: { tenantId: instance.tenantId, instanceId: instance.id, chatId } });
-      await this.db.message.create({ data: { tenantId: instance.tenantId, conversationId: conversation.id, direction: 'INBOUND', status: 'DELIVERED', body: text, wahaMessageId: payload?.id?._serialized ?? payload?.id, rawPayload: body } });
+      const inboundMessageId = payload?.id?._serialized ?? payload?.id;
+      const duplicate = inboundMessageId ? await this.db.message.findFirst({ where: { tenantId: instance.tenantId, direction: 'INBOUND', wahaMessageId: inboundMessageId } }) : null;
+      if (!duplicate) await this.db.message.create({ data: { tenantId: instance.tenantId, conversationId: conversation.id, direction: 'INBOUND', status: 'DELIVERED', body: text, wahaMessageId: inboundMessageId, rawPayload: body } });
     }
     await this.audit.logSystem(instance.tenantId, 'webhook.processed', instance.id, { event });
     return { accepted: true, duplicate: false };
