@@ -794,7 +794,14 @@ function InboxPanel({
     const timer = window.setInterval(async () => {
       try {
         await loadConversations();
-        if (selected) setMessages(await request<any[]>(`/conversations/${selected.id}/messages`, {}, token));
+        if (selected)
+          setMessages(
+            await request<any[]>(
+              `/conversations/${selected.id}/messages`,
+              {},
+              token,
+            ),
+          );
       } catch {
         // Ignore transient polling errors.
       }
@@ -847,23 +854,58 @@ function InboxPanel({
         { method: "POST" },
         token,
       );
-      await Swal.fire({ toast: true, position: "top-end", icon: "info", title: "Retry dieksekusi", text: "Menunggu hasil pengiriman...", showConfirmButton: false, timer: 2200 });
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "info",
+        title: "Retry dieksekusi",
+        text: "Menunggu hasil pengiriman...",
+        showConfirmButton: false,
+        timer: 2200,
+      });
       const deadline = Date.now() + 20000;
       while (Date.now() < deadline) {
         await new Promise((resolve) => window.setTimeout(resolve, 2000));
-        const latest = await request<any[]>(`/conversations/${selected.id}/messages`, {}, token);
+        const latest = await request<any[]>(
+          `/conversations/${selected.id}/messages`,
+          {},
+          token,
+        );
         setMessages(latest);
         const result = latest.find((item) => item.id === message.id);
         if (result?.status === "SENT") {
-          await Swal.fire({ toast: true, position: "top-end", icon: "success", title: "Pesan berhasil dikirim ulang", showConfirmButton: false, timer: 2500 });
+          await Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "success",
+            title: "Pesan berhasil dikirim ulang",
+            showConfirmButton: false,
+            timer: 2500,
+          });
           return;
         }
         if (result?.status === "FAILED") {
-          await Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Retry gagal", text: "Pesan sudah dieksekusi ulang tetapi tetap gagal dikirim.", showConfirmButton: false, timer: 4000 });
+          await Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "error",
+            title: "Retry gagal",
+            text: "Pesan sudah dieksekusi ulang tetapi tetap gagal dikirim.",
+            showConfirmButton: false,
+            timer: 4000,
+          });
           return;
         }
       }
-      await Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "Retry masih diproses", text: "Status pengiriman belum final.", showConfirmButton: false, timer: 3500 });
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "warning",
+        title: "Retry masih diproses",
+        text: "Status pengiriman belum final.",
+        showConfirmButton: false,
+        timer: 3500,
+      });
     } catch (error) {
       await Swal.fire({
         icon: "error",
@@ -941,10 +983,32 @@ function InboxPanel({
                   className={`max-w-xl rounded-2xl px-4 py-3 text-sm ${message.status === "FAILED" ? "ml-auto border border-rose-200 bg-rose-50 text-rose-900" : message.direction === "OUTBOUND" ? "ml-auto bg-indigo-600 text-white" : "bg-white text-slate-800 shadow-sm"}`}
                 >
                   <p>{message.body}</p>
-                  <div className={`mt-2 flex items-center justify-between gap-4 text-[10px] ${message.status === "FAILED" ? "text-rose-600" : message.direction === "OUTBOUND" ? "text-indigo-100" : "text-slate-400"}`}>
+                  <div
+                    className={`mt-2 flex items-center justify-between gap-4 text-[10px] ${message.status === "FAILED" ? "text-rose-600" : message.direction === "OUTBOUND" ? "text-indigo-100" : "text-slate-400"}`}
+                  >
                     {message.status} ·{" "}
                     {new Date(message.createdAt).toLocaleString()}
-                    {message.status === "FAILED" && <button type="button" title="Kirim ulang" aria-label="Kirim ulang" onClick={() => retry(message)} className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-white px-2 py-1 font-semibold text-rose-700 hover:bg-rose-100"><svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 11a8 8 0 1 0 2 5" /><path d="M20 5v6h-6" /></svg>Kirim ulang</button>}
+                    {message.status === "FAILED" && (
+                      <button
+                        type="button"
+                        title="Kirim ulang"
+                        aria-label="Kirim ulang"
+                        onClick={() => retry(message)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-white px-2 py-1 font-semibold text-rose-700 hover:bg-rose-100"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20 11a8 8 0 1 0 2 5" />
+                          <path d="M20 5v6h-6" />
+                        </svg>
+                        Kirim ulang
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -1118,10 +1182,26 @@ function WebhooksPanel({
     }
   }
   const eventOptions = [
-    { name: "message", description: "Pesan masuk atau keluar. Wajib untuk menampilkan chat di Inbox." },
-    { name: "message.any", description: "Semua aktivitas pesan, termasuk pesan dari device dan pesan yang dikirim gateway." },
-    { name: "message.ack", description: "Perubahan status pengiriman: terkirim, delivered, dibaca, atau gagal." },
-    { name: "session.status", description: "Perubahan koneksi instance seperti starting, pairing, working, atau stopped." },
+    {
+      name: "message",
+      description:
+        "Pesan masuk atau keluar. Wajib untuk menampilkan chat di Inbox.",
+    },
+    {
+      name: "message.any",
+      description:
+        "Semua aktivitas pesan, termasuk pesan dari device dan pesan yang dikirim gateway.",
+    },
+    {
+      name: "message.ack",
+      description:
+        "Perubahan status pengiriman: terkirim, delivered, dibaca, atau gagal.",
+    },
+    {
+      name: "session.status",
+      description:
+        "Perubahan koneksi instance seperti starting, pairing, working, atau stopped.",
+    },
   ];
   return (
     <div
@@ -1229,7 +1309,14 @@ function WebhooksPanel({
                       onChange={() => toggleEvent(event.name)}
                       className="mt-0.5"
                     />
-                    <span><span className="block font-semibold text-slate-800">{event.name}</span><span className="mt-0.5 block text-xs leading-5 text-slate-500">{event.description}</span></span>
+                    <span>
+                      <span className="block font-semibold text-slate-800">
+                        {event.name}
+                      </span>
+                      <span className="mt-0.5 block text-xs leading-5 text-slate-500">
+                        {event.description}
+                      </span>
+                    </span>
                   </label>
                 ))}
               </div>
@@ -1296,6 +1383,196 @@ function WebhooksPanel({
   );
 }
 
+function ContactsPanel({
+  collapsed,
+  token,
+}: {
+  collapsed: boolean;
+  token: string;
+}) {
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [query, setQuery] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    company: "",
+  });
+  const [saving, setSaving] = useState(false);
+  async function load() {
+    setContacts(
+      await request<any[]>(
+        `/contacts${query ? `?q=${encodeURIComponent(query)}` : ""}`,
+        {},
+        token,
+      ),
+    );
+  }
+  useEffect(() => {
+    load().catch(() => undefined);
+  }, [token, query]);
+  async function create(event: FormEvent) {
+    event.preventDefault();
+    if (!form.name || !form.phone) return;
+    setSaving(true);
+    try {
+      await request(
+        "/contacts",
+        { method: "POST", body: JSON.stringify(form) },
+        token,
+      );
+      setForm({ name: "", phone: "", email: "", company: "" });
+      await load();
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "Kontak tersimpan",
+        showConfirmButton: false,
+        timer: 2200,
+      });
+    } catch (error) {
+      await Swal.fire({
+        icon: "error",
+        title: "Kontak gagal disimpan",
+        text: error instanceof Error ? error.message : "Terjadi kesalahan.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+  async function remove(id: string) {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Hapus kontak?",
+      showCancelButton: true,
+      confirmButtonText: "Ya, hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#e11d48",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await request(`/contacts/${id}`, { method: "DELETE" }, token);
+      await load();
+    } catch (error) {
+      await Swal.fire({
+        icon: "error",
+        title: "Kontak gagal dihapus",
+        text: error instanceof Error ? error.message : "Terjadi kesalahan.",
+      });
+    }
+  }
+  return (
+    <div
+      className={`${collapsed ? "md:ml-20" : "md:ml-64"} mx-auto max-w-6xl px-6 py-10 transition-all`}
+    >
+      <div className="mb-8">
+        <p className="text-sm font-semibold text-indigo-600">
+          Workspace module
+        </p>
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-900">
+          Contacts
+        </h1>
+        <p className="mt-3 text-slate-500">
+          Simpan kontak pelanggan dan gunakan nomor yang sama untuk Inbox.
+        </p>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-slate-900">Daftar kontak</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {contacts.length} kontak
+              </p>
+            </div>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+              placeholder="Cari kontak..."
+            />
+          </div>
+          <div className="divide-y divide-slate-100">
+            {contacts.length === 0 ? (
+              <p className="p-8 text-sm text-slate-500">Belum ada kontak.</p>
+            ) : (
+              contacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className="flex items-center justify-between gap-4 px-6 py-4"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-900">
+                      {contact.name}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {contact.phone}
+                      {contact.company ? ` · ${contact.company}` : ""}
+                    </p>
+                    {contact.email && (
+                      <p className="mt-1 text-xs text-slate-400">
+                        {contact.email}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => remove(contact.id)}
+                    className="shrink-0 rounded-lg border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+        <form
+          onSubmit={create}
+          className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="font-semibold text-slate-900">Tambah kontak</h2>
+          <div className="mt-4 space-y-3">
+            <input
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+              placeholder="Nama kontak"
+            />
+            <input
+              required
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+              placeholder="628xxxxxxxxxx"
+            />
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+              placeholder="Email, opsional"
+            />
+            <input
+              value={form.company}
+              onChange={(e) => setForm({ ...form, company: e.target.value })}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+              placeholder="Perusahaan, opsional"
+            />
+            <button
+              disabled={saving}
+              className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {saving ? "Menyimpan..." : "Simpan kontak"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function ModulePanel({
   module,
   collapsed,
@@ -1309,7 +1586,11 @@ function ModulePanel({
     return <InboxPanel collapsed={collapsed} token={token} />;
   if (module === "webhooks")
     return <WebhooksPanel collapsed={collapsed} token={token} />;
-  return <GenericModulePanel module={module} collapsed={collapsed} token={token} />;
+  if (module === "contacts")
+    return <ContactsPanel collapsed={collapsed} token={token} />;
+  return (
+    <GenericModulePanel module={module} collapsed={collapsed} token={token} />
+  );
 }
 
 function GenericModulePanel({
