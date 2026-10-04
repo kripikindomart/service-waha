@@ -12,6 +12,7 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-fastify": "^11.0.11",
+    "@fastify/rate-limit": "^10.2.1",
     "@prisma/client": "^6.16.2",
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",

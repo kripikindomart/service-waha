@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post } from '@nestjs/common';
+import { Body, Controller, Headers, Post, UnauthorizedException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { PrismaService } from './prisma.service';
 import { AuditService } from './audit.service';
@@ -9,6 +9,8 @@ export class WebhooksController {
 
   @Post()
   async receive(@Body() body: any, @Headers('x-webhook-signature') signature?: string) {
+    const webhookSecret = process.env.WAHA_WEBHOOK_SECRET;
+    if (webhookSecret && signature !== webhookSecret) throw new UnauthorizedException('invalid_webhook_signature');
     const session = body?.session ?? body?.payload?.session;
     const event = body?.event ?? body?.eventName ?? 'unknown';
     if (!session) return { accepted: false, reason: 'missing_session' };
