@@ -218,6 +218,9 @@ function Dashboard({
   const [creating, setCreating] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
   const [qrInstanceId, setQrInstanceId] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  useEffect(() => setDarkMode(localStorage.getItem("gateway_dark_mode") === "true"), []);
   async function load() {
     setLoading(true);
     try {
@@ -410,7 +413,7 @@ function Dashboard({
     }
   }
   return (
-    <main className="min-h-screen bg-[#f6f8fc] text-slate-900">
+    <main className={`${darkMode ? "gateway-dark" : ""} min-h-screen bg-[#f6f8fc] text-slate-900`}>
       <header className="border-b border-slate-200 bg-white md:pl-64">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-3">
@@ -424,21 +427,20 @@ function Dashboard({
               <p className="text-sm text-slate-500">Gateway control center</p>
             </div>
           </div>
-          <button
-            onClick={onLogout}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
-          >
-            Keluar
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem("gateway_dark_mode", String(next)); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50">{darkMode ? "☀️" : "🌙"}</button>
+            <button onClick={onLogout} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50">Keluar</button>
+          </div>
         </div>
       </header>
-      <nav className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 bg-white md:block">
+      <nav data-collapsed={sidebarCollapsed} className={`${sidebarCollapsed ? "w-20" : "w-64"} fixed inset-y-0 left-0 z-30 hidden border-r border-slate-200 bg-white transition-all md:block`}>
         <div className="flex h-full flex-col px-4 py-6 text-sm">
-          <div className="flex items-center gap-3 px-3 pb-8">
+          <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} gap-3 px-3 pb-8`}>
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 font-black text-white">W</div>
-            <div><p className="font-bold tracking-tight text-slate-900">WhatsApp Gateway</p><p className="text-xs text-slate-400">Workspace admin</p></div>
+            {!sidebarCollapsed && <div><p className="font-bold tracking-tight text-slate-900">WhatsApp Gateway</p><p className="text-xs text-slate-400">Workspace admin</p></div>}
+            {!sidebarCollapsed && <button onClick={() => setSidebarCollapsed(true)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">‹</button>}
           </div>
-          <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Workspace</p>
+          {sidebarCollapsed ? <button onClick={() => setSidebarCollapsed(false)} className="mb-4 rounded-lg p-2 text-slate-500 hover:bg-slate-100">›</button> : <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Workspace</p>}
           <div className="space-y-1">
             <span className="flex items-center gap-3 rounded-xl bg-indigo-50 px-3 py-2.5 font-semibold text-indigo-700">▦ <span>Overview</span></span>
             <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">☷ <span>Inbox</span></span>
@@ -454,7 +456,7 @@ function Dashboard({
           <div className="mt-auto rounded-2xl bg-slate-50 p-4 text-xs text-slate-500"><p className="font-semibold text-slate-700">Gateway status</p><p className="mt-2 flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-emerald-500" />All systems operational</p></div>
         </div>
       </nav>
-      <div className="mx-auto max-w-7xl px-6 py-10 md:ml-64">
+      <div className={`${sidebarCollapsed ? "md:ml-20" : "md:ml-64"} mx-auto max-w-7xl px-6 py-10 transition-all`}>
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="text-sm font-medium text-indigo-600">Workspace</p>

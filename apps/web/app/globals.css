@@ -1,4 +1,13 @@
 @import "tailwindcss";
 
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 body { margin: 0; min-height: 100vh; background: #f6f8fc; color: #172033; font-family: ui-sans-serif, system-ui, sans-serif; }
+nav[data-collapsed="true"] span span { display: none; }
+.gateway-dark { background: #0b1220 !important; color: #e5e7eb !important; }
+.gateway-dark header, .gateway-dark nav { background: #111a2d !important; border-color: #24324a !important; }
+.gateway-dark .bg-white { background: #111a2d !important; }
+.gateway-dark .bg-slate-50 { background: #172238 !important; }
+.gateway-dark .text-slate-900 { color: #f8fafc !important; }
+.gateway-dark .text-slate-600, .gateway-dark .text-slate-500, .gateway-dark .text-slate-400 { color: #aab7cc !important; }
+.gateway-dark .border-slate-200, .gateway-dark .border-slate-100 { border-color: #293953 !important; }
+.gateway-dark .hover\\:bg-slate-50:hover { background: #1b2942 !important; }
