@@ -26,7 +26,9 @@ export class WebhooksController {
     if (messageId && ['SENT', 'DELIVERED', 'READ', 'FAILED'].includes(String(ack).toUpperCase())) {
       await this.db.message.updateMany({ where: { tenantId: instance.tenantId, wahaMessageId: messageId }, data: { status: String(ack).toUpperCase() as any, rawPayload: body } });
     }
-    const chatId = payload?.from ?? payload?.chatId ?? payload?.id?.remote;
+    const rawChatId = payload?.from ?? payload?.chatId ?? payload?.id?.remote;
+    const alternateChatId = payload?._data?.key?.remoteJidAlt;
+    const chatId = String(rawChatId ?? '').endsWith('@lid') && alternateChatId ? String(alternateChatId).replace('@s.whatsapp.net', '@c.us') : rawChatId;
     const text = payload?.body ?? payload?.text;
     if (chatId && text && event.toLowerCase().includes('message')) {
       const conversation = await this.db.conversation.upsert({ where: { instanceId_chatId: { instanceId: instance.id, chatId } }, update: {}, create: { tenantId: instance.tenantId, instanceId: instance.id, chatId } });

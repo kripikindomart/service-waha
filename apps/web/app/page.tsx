@@ -790,6 +790,17 @@ function InboxPanel({
       })
       .catch(() => undefined);
   }, [token]);
+  useEffect(() => {
+    const timer = window.setInterval(async () => {
+      try {
+        await loadConversations();
+        if (selected) setMessages(await request<any[]>(`/conversations/${selected.id}/messages`, {}, token));
+      } catch {
+        // Ignore transient polling errors.
+      }
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [token, selected?.id]);
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!body.trim() || !chatId.trim() || !instanceId) return;
