@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from './prisma.service';
 import { AuthUser } from './auth.types';
@@ -29,6 +29,9 @@ export class InstancesService {
   async qr(user: AuthUser, id: string) {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
+    const session = await this.waha.get(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`);
+    const status = String(session.data?.status ?? '').toUpperCase();
+    if (status !== 'SCAN_QR_CODE') throw new BadRequestException(`QR belum tersedia. Status session: ${status || 'UNKNOWN'}`);
     const response = await this.waha.get(`/api/${encodeURIComponent(instance.wahaSession)}/auth/qr`, { responseType: 'arraybuffer' });
     return { data: response.data, contentType: response.headers['content-type'] ?? 'image/png' };
   }
