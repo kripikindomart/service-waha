@@ -167,6 +167,11 @@ model Contact {
   company   String?
   notes     String?
   tags      String[] @default([])
+  source    String   @default("manual")
+  wahaId    String?
+  groupId   String?
+  groupName String?
+  sourceInstanceId String?
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

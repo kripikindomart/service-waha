@@ -7,6 +7,11 @@ CREATE TABLE "Contact" (
     "company" TEXT,
     "notes" TEXT,
     "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+    "source" TEXT NOT NULL DEFAULT 'manual',
+    "wahaId" TEXT,
+    "groupId" TEXT,
+    "groupName" TEXT,
+    "sourceInstanceId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Contact_pkey" PRIMARY KEY ("id")

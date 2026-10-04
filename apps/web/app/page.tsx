@@ -1399,6 +1399,8 @@ function ContactsPanel({
     company: "",
   });
   const [saving, setSaving] = useState(false);
+  const [instances, setInstances] = useState<any[]>([]);
+  const [instanceId, setInstanceId] = useState("");
   async function load() {
     setContacts(
       await request<any[]>(
@@ -1410,7 +1412,57 @@ function ContactsPanel({
   }
   useEffect(() => {
     load().catch(() => undefined);
+    request<any[]>("/instances", {}, token)
+      .then(setInstances)
+      .catch(() => undefined);
   }, [token, query]);
+  async function importSource(source: "contacts" | "groups") {
+    if (!instanceId) {
+      await Swal.fire({
+        icon: "info",
+        title: "Pilih instance",
+        text: "Pilih instance WhatsApp yang ingin diambil datanya.",
+      });
+      return;
+    }
+    await Swal.fire({
+      title:
+        source === "groups"
+          ? "Mengambil anggota group..."
+          : "Mengambil kontak WhatsApp...",
+      text: "Proses dapat membutuhkan waktu beberapa saat.",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+    try {
+      const result = await request<{ imported: number; groups?: number }>(
+        `/contacts/import/${instanceId}`,
+        { method: "POST", body: JSON.stringify({ source }) },
+        token,
+      );
+      Swal.close();
+      await load();
+      await Swal.fire({
+        icon: "success",
+        title: "Import selesai",
+        text:
+          source === "groups"
+            ? `${result.imported} anggota dari ${result.groups ?? 0} group diproses.`
+            : `${result.imported} kontak diproses.`,
+        confirmButtonText: "Selesai",
+      });
+    } catch (error) {
+      Swal.close();
+      await Swal.fire({
+        icon: "error",
+        title: "Import gagal",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Pastikan session sudah terkoneksi dan NOWEB Store aktif.",
+      });
+    }
+  }
   async function create(event: FormEvent) {
     event.preventDefault();
     if (!form.name || !form.phone) return;
@@ -1527,47 +1579,89 @@ function ContactsPanel({
             )}
           </div>
         </section>
-        <form
-          onSubmit={create}
-          className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <h2 className="font-semibold text-slate-900">Tambah kontak</h2>
-          <div className="mt-4 space-y-3">
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-              placeholder="Nama kontak"
-            />
-            <input
-              required
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-              placeholder="628xxxxxxxxxx"
-            />
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-              placeholder="Email, opsional"
-            />
-            <input
-              value={form.company}
-              onChange={(e) => setForm({ ...form, company: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-              placeholder="Perusahaan, opsional"
-            />
-            <button
-              disabled={saving}
-              className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="font-semibold text-slate-900">
+              Import dari WhatsApp
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Ambil kontak tersimpan atau anggota group dari instance yang
+              terkoneksi.
+            </p>
+            <select
+              value={instanceId}
+              onChange={(e) => setInstanceId(e.target.value)}
+              className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
             >
-              {saving ? "Menyimpan..." : "Simpan kontak"}
-            </button>
-          </div>
-        </form>
+              <option value="">Pilih instance</option>
+              {instances.map((instance) => (
+                <option key={instance.id} value={instance.id}>
+                  {instance.name} ({instance.status})
+                </option>
+              ))}
+            </select>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => importSource("contacts")}
+                className="rounded-xl border border-indigo-200 px-3 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+              >
+                Import kontak
+              </button>
+              <button
+                type="button"
+                onClick={() => importSource("groups")}
+                className="rounded-xl border border-indigo-200 px-3 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+              >
+                Import anggota group
+              </button>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              Import kontak WAHA membutuhkan NOWEB Store aktif pada session.
+            </p>
+          </section>
+          <form
+            onSubmit={create}
+            className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+          >
+            <h2 className="font-semibold text-slate-900">Tambah kontak</h2>
+            <div className="mt-4 space-y-3">
+              <input
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                placeholder="Nama kontak"
+              />
+              <input
+                required
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                placeholder="628xxxxxxxxxx"
+              />
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                placeholder="Email, opsional"
+              />
+              <input
+                value={form.company}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                placeholder="Perusahaan, opsional"
+              />
+              <button
+                disabled={saving}
+                className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+              >
+                {saving ? "Menyimpan..." : "Simpan kontak"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

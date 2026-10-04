@@ -14,7 +14,7 @@ export class InstancesService {
     const instance = await this.db.whatsappInstance.create({ data: { tenantId: user.tenantId, name, wahaSession: `${user.tenantId}-${name}`, webhookEndpointId: defaultWebhook?.id } });
     const webhookUrl = defaultWebhook?.url ?? process.env.WAHA_WEBHOOK_URL;
     const webhookEvents = defaultWebhook?.events ?? ['message', 'message.any', 'message.ack', 'session.status'];
-    const config = { noweb: { markOnline: true }, ...(webhookUrl ? { webhooks: [{ url: webhookUrl, events: webhookEvents, ...(defaultWebhook?.secret ? { hmac: { key: defaultWebhook.secret } } : {}) }] } : {}) };
+    const config = { noweb: { markOnline: true, store: { enabled: true, fullSync: true } }, ...(webhookUrl ? { webhooks: [{ url: webhookUrl, events: webhookEvents, ...(defaultWebhook?.secret ? { hmac: { key: defaultWebhook.secret } } : {}) }] } : {}) };
     await this.waha.post('/api/sessions', { name: instance.wahaSession, config });
     await this.audit.log(user, 'instance.create', instance.id, { name });
     return instance;
