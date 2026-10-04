@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from './prisma.service';
 import { compare, hash } from 'bcryptjs';
+import { CORE_PERMISSIONS } from './permissions';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,10 @@ export class AuthService {
       const member = await tx.tenantMember.create({ data: { userId: user.id, tenantId: tenant.id } });
       const role = await tx.role.create({ data: { tenantId: tenant.id, name: 'owner', description: 'Tenant owner' } });
       await tx.memberRole.create({ data: { memberId: member.id, roleId: role.id } });
+      for (const key of CORE_PERMISSIONS) {
+        const permission = await tx.permission.upsert({ where: { key }, update: {}, create: { key } });
+        await tx.rolePermission.create({ data: { roleId: role.id, permissionId: permission.id } });
+      }
       return { user, tenant };
     });
     return this.issue(result.user.id, result.tenant.id, result.user.isSuperAdmin);
