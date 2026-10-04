@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 
+// Keep the gateway module bundle invalidated after local dev server restarts.
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8081";
 type Instance = {
   id: string;
