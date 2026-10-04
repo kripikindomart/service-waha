@@ -29,8 +29,8 @@ export class InstancesService {
   async qr(user: AuthUser, id: string) {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
-    const response = await this.waha.get(`/api/${encodeURIComponent(instance.wahaSession)}/auth/qr`);
-    return response.data;
+    const response = await this.waha.get(`/api/${encodeURIComponent(instance.wahaSession)}/auth/qr`, { responseType: 'arraybuffer' });
+    return { data: response.data, contentType: response.headers['content-type'] ?? 'image/png' };
   }
   private async control(user: AuthUser, id: string, action: 'start' | 'stop') {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });

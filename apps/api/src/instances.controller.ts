@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { FastifyReply } from 'fastify';
 import { IsString, MinLength } from 'class-validator';
 import { AuthGuard } from './auth.guard';
 import { PermissionGuard } from './permission.guard';
@@ -15,5 +16,5 @@ export class InstancesController {
   @Post(':id/start') @RequirePermissions('instance.control') start(@Req() req: any, @Param('id') id: string) { return this.instances.start(req.user, id); }
   @Post(':id/stop') @RequirePermissions('instance.control') stop(@Req() req: any, @Param('id') id: string) { return this.instances.stop(req.user, id); }
   @Get(':id/status') @RequirePermissions('instance.read') status(@Req() req: any, @Param('id') id: string) { return this.instances.status(req.user, id); }
-  @Get(':id/qr') @RequirePermissions('instance.read') qr(@Req() req: any, @Param('id') id: string) { return this.instances.qr(req.user, id); }
+  @Get(':id/qr') @RequirePermissions('instance.read') async qr(@Req() req: any, @Param('id') id: string, @Res() reply: FastifyReply) { const qr = await this.instances.qr(req.user, id); return reply.header('Content-Type', qr.contentType).send(qr.data); }
 }
