@@ -562,10 +562,11 @@ function Dashboard({
                       {instance.status === "WORKING" ? "Connected" : "Start"}
                     </button>
                     <button
+                      disabled={instance.status === "WORKING"}
                       onClick={() => showQr(instance)}
-                      className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+                      className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white"
                     >
-                      QR
+                      {instance.status === "WORKING" ? "QR Aktif" : "QR"}
                     </button>
                     <button
                       onClick={() => action(instance, "stop")}
