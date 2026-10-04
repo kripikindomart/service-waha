@@ -17,6 +17,13 @@ export class InstancesService {
   }
   start(user: AuthUser, id: string) { return this.control(user, id, 'start'); }
   stop(user: AuthUser, id: string) { return this.control(user, id, 'stop'); }
+  async remove(user: AuthUser, id: string) {
+    const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
+    if (!instance) throw new NotFoundException('instance_not_found');
+    try { await this.waha.delete(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`); } catch (error) { if (!axios.isAxiosError(error) || error.response?.status !== 404) throw error; }
+    await this.audit.log(user, 'instance.delete', id, { name: instance.name });
+    return this.db.whatsappInstance.delete({ where: { id } });
+  }
   async status(user: AuthUser, id: string) {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
