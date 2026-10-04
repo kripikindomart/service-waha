@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from './prisma.service';
 import { compare, hash } from 'bcryptjs';
 import { CORE_PERMISSIONS } from './permissions';
+import { createHash, randomBytes } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -30,5 +31,22 @@ export class AuthService {
     if (!user || !(await compare(password, user.passwordHash)) || !user.memberships[0]) throw new UnauthorizedException('invalid_credentials');
     return this.issue(user.id, user.memberships[0].tenantId, user.isSuperAdmin);
   }
-  private issue(userId: string, tenantId: string, isSuperAdmin: boolean) { return { accessToken: this.jwt.sign({ userId, tenantId, isSuperAdmin }), user: { id: userId, tenantId, isSuperAdmin } }; }
+
+  async refresh(rawToken: string) {
+    const tokenHash = this.hashToken(rawToken);
+    const stored = await this.db.refreshToken.findUnique({ where: { tokenHash }, include: { user: { include: { memberships: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'asc' }, take: 1 } } } } });
+    if (!stored || stored.revokedAt || stored.expiresAt <= new Date() || !stored.user.memberships[0]) throw new UnauthorizedException('invalid_refresh_token');
+    await this.db.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } });
+    return this.issue(stored.user.id, stored.user.memberships[0].tenantId, stored.user.isSuperAdmin);
+  }
+
+  async revoke(rawToken: string) { await this.db.refreshToken.updateMany({ where: { tokenHash: this.hashToken(rawToken), revokedAt: null }, data: { revokedAt: new Date() } }); return { ok: true }; }
+
+  private async issue(userId: string, tenantId: string, isSuperAdmin: boolean) {
+    const refreshToken = randomBytes(48).toString('base64url');
+    await this.db.refreshToken.create({ data: { tokenHash: this.hashToken(refreshToken), userId, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) } });
+    return { accessToken: this.jwt.sign({ userId, tenantId, isSuperAdmin }), refreshToken, user: { id: userId, tenantId, isSuperAdmin } };
+  }
+
+  private hashToken(value: string) { return createHash('sha256').update(value).digest('hex'); }
 }
