@@ -4,6 +4,13 @@ import { Queue } from 'bullmq';
 import { PrismaService } from './prisma.service';
 import { AuthUser } from './auth.types';
 
+export function normalizeChatId(value: string) {
+  const input = value.trim();
+  if (input.includes('@')) return input;
+  const digits = input.replace(/[^0-9]/g, '');
+  return digits ? `${digits}@c.us` : input;
+}
+
 @Injectable()
 export class MessagesService {
   constructor(private readonly db: PrismaService, @InjectQueue('messages') private readonly queue: Queue) {}
@@ -11,7 +18,8 @@ export class MessagesService {
   async sendText(user: AuthUser, instanceId: string, chatId: string, body: string) {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id: instanceId, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
-    const conversation = await this.db.conversation.upsert({ where: { instanceId_chatId: { instanceId, chatId } }, update: {}, create: { tenantId: user.tenantId, instanceId, chatId } });
+    const normalizedChatId = normalizeChatId(chatId);
+    const conversation = await this.db.conversation.upsert({ where: { instanceId_chatId: { instanceId, chatId: normalizedChatId } }, update: {}, create: { tenantId: user.tenantId, instanceId, chatId: normalizedChatId } });
     const message = await this.db.message.create({ data: { tenantId: user.tenantId, conversationId: conversation.id, direction: 'OUTBOUND', body, status: 'PENDING' } });
     await this.queue.add('send-text', { messageId: message.id }, { attempts: 5, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 1000, removeOnFail: 5000 });
     return { id: message.id, status: message.status };

@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import axios from 'axios';
 import { PrismaService } from './prisma.service';
+import { normalizeChatId } from './messages.service';
 
 @Processor('messages')
 export class MessagesProcessor extends WorkerHost {
@@ -12,7 +13,7 @@ export class MessagesProcessor extends WorkerHost {
     const message = await this.db.message.findUnique({ where: { id: job.data.messageId }, include: { conversation: { include: { instance: true } } } });
     if (!message || !message.body) return;
     try {
-      const result = await this.waha.post('/api/sendText', { session: message.conversation.instance.wahaSession, chatId: message.conversation.chatId, text: message.body });
+      const result = await this.waha.post('/api/sendText', { session: message.conversation.instance.wahaSession, chatId: normalizeChatId(message.conversation.chatId), text: message.body });
       await this.db.message.update({ where: { id: message.id }, data: { status: 'SENT', wahaMessageId: result.data?.id ?? result.data?.message?.id, rawPayload: result.data } });
     } catch (error: any) {
       await this.db.message.update({ where: { id: message.id }, data: { status: 'FAILED', rawPayload: { error: error?.message ?? 'send_failed' } } });

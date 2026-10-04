@@ -959,7 +959,7 @@ function InboxPanel({
               value={chatId}
               onChange={(event) => setChatId(event.target.value)}
               className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
-              placeholder="628xxxxxxxxxx@c.us"
+              placeholder="628xxxxxxxxxx atau 628xxxxxxxxxx@c.us"
             />
             <button
               type="submit"
