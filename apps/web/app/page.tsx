@@ -428,7 +428,8 @@ function Dashboard({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem("gateway_dark_mode", String(next)); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50">{darkMode ? "☀️" : "🌙"}</button>
+            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "Buka sidebar" : "Ciutkan sidebar"} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50">☰</button>
+            <button onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem("gateway_dark_mode", String(next)); }} title={darkMode ? "Light mode" : "Dark mode"} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50">{darkMode ? "Light" : "Dark"}</button>
             <button onClick={onLogout} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50">Keluar</button>
           </div>
         </div>
@@ -438,9 +439,8 @@ function Dashboard({
           <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} gap-3 px-3 pb-8`}>
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 font-black text-white">W</div>
             {!sidebarCollapsed && <div><p className="font-bold tracking-tight text-slate-900">WhatsApp Gateway</p><p className="text-xs text-slate-400">Workspace admin</p></div>}
-            {!sidebarCollapsed && <button onClick={() => setSidebarCollapsed(true)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">‹</button>}
           </div>
-          {sidebarCollapsed ? <button onClick={() => setSidebarCollapsed(false)} className="mb-4 rounded-lg p-2 text-slate-500 hover:bg-slate-100">›</button> : <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Workspace</p>}
+          <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Workspace</p>
           <div className="space-y-1">
             <span className="flex items-center gap-3 rounded-xl bg-indigo-50 px-3 py-2.5 font-semibold text-indigo-700">▦ <span>Overview</span></span>
             <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-slate-50">☷ <span>Inbox</span></span>
