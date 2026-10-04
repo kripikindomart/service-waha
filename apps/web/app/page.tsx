@@ -33,10 +33,17 @@ async function request<T>(
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
-  useEffect(
-    () => setToken(localStorage.getItem("service_waha_access_token")),
-    [],
-  );
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setToken(localStorage.getItem("service_waha_access_token"));
+    setHydrated(true);
+  }, []);
+  if (!hydrated)
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#080d1b] text-cyan-300">
+        <div className="text-sm font-bold tracking-[.24em]">SERVICE WAHA</div>
+      </main>
+    );
   if (!token)
     return (
       <AuthScreen
