@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8081";
@@ -221,6 +222,9 @@ function Dashboard({
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeModule, setActiveModule] = useState("overview");
+  const pathname = usePathname();
+  const router = useRouter();
+  useEffect(() => setActiveModule(pathname.split("/")[1] || "overview"), [pathname]);
   useEffect(() => setDarkMode(localStorage.getItem("gateway_dark_mode") === "true"), []);
   useEffect(() => {
     if (!notice) return;
@@ -441,7 +445,7 @@ function Dashboard({
           </div>
         </div>
       </header>
-      <nav data-collapsed={sidebarCollapsed} onClick={(event) => { const label = (event.target as HTMLElement).textContent?.trim().toLowerCase(); const module = label?.includes("inbox") ? "inbox" : label?.includes("contacts") ? "contacts" : label?.includes("automations") ? "automations" : label?.includes("team") ? "team" : label?.includes("usage") ? "usage" : label?.includes("settings") ? "settings" : "overview"; setActiveModule(module); }} className={`${sidebarCollapsed ? "w-20" : "w-64"} fixed inset-y-0 left-0 z-30 hidden border-r border-slate-200 bg-white transition-all md:block`}>
+      <nav data-collapsed={sidebarCollapsed} onClick={(event) => { const label = (event.target as HTMLElement).textContent?.trim().toLowerCase(); const module = label?.includes("inbox") ? "inbox" : label?.includes("contacts") ? "contacts" : label?.includes("automations") ? "automations" : label?.includes("team") ? "team" : label?.includes("usage") ? "usage" : label?.includes("settings") ? "settings" : "overview"; setActiveModule(module); router.push(module === "overview" ? "/overview" : `/${module}`); }} className={`${sidebarCollapsed ? "w-20" : "w-64"} fixed inset-y-0 left-0 z-30 hidden border-r border-slate-200 bg-white transition-all md:block`}>
         <div className="flex h-full flex-col px-4 py-6 text-sm">
           <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} gap-3 px-3 pb-8`}>
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 font-black text-white">W</div>
@@ -612,7 +616,23 @@ function Dashboard({
   );
 }
 
+function InboxPanel({ collapsed, token }: { collapsed: boolean; token: string }) {
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [instances, setInstances] = useState<any[]>([]);
+  const [body, setBody] = useState("");
+  const [chatId, setChatId] = useState("");
+  const [instanceId, setInstanceId] = useState("");
+  async function loadConversations() { const data = await request<any[]>("/conversations", {}, token); setConversations(data); if (selected) { const fresh = data.find((item) => item.id === selected.id); if (fresh) setSelected(fresh); } }
+  async function openConversation(conversation: any) { setSelected(conversation); setChatId(conversation.chatId); setInstanceId(conversation.instanceId); setMessages(await request<any[]>(`/conversations/${conversation.id}/messages`, {}, token)); }
+  useEffect(() => { Promise.all([request<any[]>("/conversations", {}, token), request<any[]>("/instances", {}, token)]).then(([items, available]) => { setConversations(items); setInstances(available); }).catch(() => undefined); }, [token]);
+  async function send(event: FormEvent) { event.preventDefault(); if (!body.trim() || !chatId.trim() || !instanceId) return; try { await request(`/instances/${instanceId}/messages/text`, { method: "POST", body: JSON.stringify({ chatId: chatId.trim(), body: body.trim() }) }, token); setBody(""); await loadConversations(); if (selected) setMessages(await request<any[]>(`/conversations/${selected.id}/messages`, {}, token)); await Swal.fire({ toast: true, position: "top-end", icon: "success", title: "Pesan masuk antrean", showConfirmButton: false, timer: 2500 }); } catch (error) { await Swal.fire({ icon: "error", title: "Pesan gagal dikirim", text: error instanceof Error ? error.message : "Terjadi kesalahan." }); } }
+  return <div className={`${collapsed ? "md:ml-20" : "md:ml-64"} mx-auto max-w-none px-6 py-10 transition-all`}><div className="mb-8"><p className="text-sm font-semibold text-indigo-600">Workspace module</p><h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-900">Inbox</h1><p className="mt-3 text-slate-500">Pantau conversation dan kirim pesan dari semua instance.</p></div><div className="grid min-h-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[320px_1fr]"><aside className="border-b border-slate-200 lg:border-b-0 lg:border-r"><div className="border-b border-slate-100 px-5 py-4"><p className="font-semibold text-slate-900">Conversations</p><p className="mt-1 text-xs text-slate-500">{conversations.length} conversation</p></div><div className="divide-y divide-slate-100">{conversations.map((conversation) => <button key={conversation.id} onClick={() => openConversation(conversation)} className={`block w-full px-5 py-4 text-left hover:bg-indigo-50 ${selected?.id === conversation.id ? "bg-indigo-50" : ""}`}><p className="font-semibold text-slate-900">{conversation.title || conversation.chatId}</p><p className="mt-1 truncate text-xs text-slate-500">{conversation.messages?.[0]?.body || "Belum ada pesan"}</p><p className="mt-2 text-[11px] text-indigo-600">{conversation.instance?.name}</p></button>)}{conversations.length === 0 && <p className="p-6 text-sm text-slate-500">Belum ada conversation. Kirim pesan pertama dari form di kanan.</p>}</div></aside><section className="flex min-w-0 flex-col"><div className="border-b border-slate-100 px-6 py-4"><p className="font-semibold text-slate-900">{selected ? selected.chatId : "New message"}</p><p className="mt-1 text-xs text-slate-500">Pesan outbound dan inbound akan tampil di sini.</p></div><div className="flex-1 space-y-3 overflow-y-auto bg-slate-50/70 p-6">{messages.length === 0 ? <div className="grid h-full min-h-64 place-items-center text-sm text-slate-400">Pilih conversation atau kirim pesan baru.</div> : messages.map((message) => <div key={message.id} className={`max-w-xl rounded-2xl px-4 py-3 text-sm ${message.direction === "OUTBOUND" ? "ml-auto bg-indigo-600 text-white" : "bg-white text-slate-800 shadow-sm"}`}><p>{message.body}</p><p className={`mt-2 text-[10px] ${message.direction === "OUTBOUND" ? "text-indigo-100" : "text-slate-400"}`}>{message.status} · {new Date(message.createdAt).toLocaleString()}</p></div>)}</div><form onSubmit={send} className="grid gap-3 border-t border-slate-100 p-5 md:grid-cols-[180px_1fr_auto]"><select value={instanceId} onChange={(event) => setInstanceId(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"><option value="">Pilih instance</option>{instances.map((instance) => <option key={instance.id} value={instance.id}>{instance.name}</option>)}</select><input value={chatId} onChange={(event) => setChatId(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" placeholder="628xxxxxxxxxx@c.us" /><button type="submit" className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-500">Kirim</button><textarea value={body} onChange={(event) => setBody(event.target.value)} className="md:col-span-3 rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" placeholder="Tulis pesan..." rows={2} /></form></section></div></div>;
+}
+
 function ModulePanel({ module, collapsed, token }: { module: string; collapsed: boolean; token: string }) {
+  if (module === "inbox") return <InboxPanel collapsed={collapsed} token={token} />;
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => { setLoading(true); const path = module === "inbox" ? "/conversations" : module === "team" ? "/members" : module === "usage" ? "/audit-logs" : ""; if (!path) { setData([]); setLoading(false); return; } request<any[]>(path, {}, token).then(setData).catch(() => setData([])).finally(() => setLoading(false)); }, [module, token]);
