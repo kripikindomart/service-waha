@@ -414,10 +414,10 @@ function Dashboard({
   }
   return (
     <main className={`${darkMode ? "gateway-dark" : ""} min-h-screen bg-[#f6f8fc] text-slate-900`}>
-      <header className="border-b border-slate-200 bg-white md:pl-64">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+      <header className="border-b border-slate-200 bg-white">
+        <div className={`${sidebarCollapsed ? "md:ml-20" : "md:ml-64"} flex items-center justify-between px-6 py-5 transition-all`}>
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 font-black text-white shadow-lg shadow-indigo-200">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 font-black text-white">
               S
             </div>
             <div>
@@ -426,10 +426,10 @@ function Dashboard({
               </p>
               <p className="text-sm text-slate-500">Gateway control center</p>
             </div>
+            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "Buka sidebar" : "Ciutkan sidebar"} aria-label={sidebarCollapsed ? "Buka sidebar" : "Ciutkan sidebar"} className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"><span className="menu-icon" /></button>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "Buka sidebar" : "Ciutkan sidebar"} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50">☰</button>
-            <button onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem("gateway_dark_mode", String(next)); }} title={darkMode ? "Light mode" : "Dark mode"} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50">{darkMode ? "Light" : "Dark"}</button>
+            <button onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem("gateway_dark_mode", String(next)); }} title={darkMode ? "Light mode" : "Dark mode"} aria-label={darkMode ? "Light mode" : "Dark mode"} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50"><span className={darkMode ? "theme-icon theme-icon-sun" : "theme-icon theme-icon-moon"} /></button>
             <button onClick={onLogout} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50">Keluar</button>
           </div>
         </div>
@@ -477,7 +477,7 @@ function Dashboard({
             <button
               type="submit"
               disabled={creating || !name.trim()}
-              className="rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {creating ? "Menghubungkan..." : "Tambah"}
             </button>
