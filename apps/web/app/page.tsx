@@ -6,7 +6,8 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8081';
 type Instance = { id: string; name: string; wahaSession: string; status: string; createdAt: string };
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
-  const response = await fetch(`${API}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers ?? {}) } });
+  const headers: HeadersInit = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers ?? {}) };
+  const response = await fetch(`${API}${path}`, { ...options, headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.message ?? data.error ?? `Request failed (${response.status})`);
   return data;
