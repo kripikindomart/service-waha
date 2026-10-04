@@ -1,0 +1,17 @@
+services:
+  gateway:
+    build:
+      context: ../../services/gateway
+    container_name: servic-waha-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
+    networks:
+      - service_waha_net
+
+networks:
+  service_waha_net:
+    external: true
+    name: service-waha-net

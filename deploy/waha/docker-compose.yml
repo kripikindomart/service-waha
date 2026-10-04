@@ -11,7 +11,13 @@ services:
     volumes:
       - waha_sessions:/app/.sessions
       - waha_files:/app/files
+    networks:
+      - service_waha_net
 
 volumes:
   waha_sessions:
   waha_files:
+
+networks:
+  service_waha_net:
+    name: service-waha-net
