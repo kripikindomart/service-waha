@@ -35,7 +35,7 @@ export class InstancesService {
   private async control(user: AuthUser, id: string, action: 'start' | 'stop') {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
-    const response = await this.waha.post(`/api/sessions/${encodeURIComponent(instance.wahaSession)}/${action}`);
+    const response = await this.waha.post(`/api/sessions/${encodeURIComponent(instance.wahaSession)}/${action}`, {});
     await this.db.whatsappInstance.update({ where: { id }, data: { status: action === 'start' ? 'STARTING' : 'STOPPED' } });
     await this.audit.log(user, `instance.${action}`, id);
     return response.data;
