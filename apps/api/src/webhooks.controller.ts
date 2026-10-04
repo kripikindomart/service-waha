@@ -47,7 +47,10 @@ export class WebhooksController {
       const duplicate = messageId ? await this.db.message.findFirst({ where: { tenantId: instance.tenantId, wahaMessageId: messageId } }) : null;
       const recentOutbound = fromMe && !duplicate ? await this.db.message.findFirst({ where: { tenantId: instance.tenantId, conversationId: conversation.id, direction: 'OUTBOUND', body: text, createdAt: { gte: new Date(Date.now() - 60_000) } }, orderBy: { createdAt: 'desc' } }) : null;
       if (recentOutbound && messageId) await this.db.message.update({ where: { id: recentOutbound.id }, data: { wahaMessageId: messageId, rawPayload: body } });
-      else if (!duplicate) await this.db.message.create({ data: { tenantId: instance.tenantId, conversationId: conversation.id, direction: fromMe ? 'OUTBOUND' : 'INBOUND', status: fromMe ? 'SENT' : 'DELIVERED', body: text, wahaMessageId: messageId, rawPayload: body } });
+      else if (!duplicate) {
+        try { await this.db.message.create({ data: { tenantId: instance.tenantId, conversationId: conversation.id, direction: fromMe ? 'OUTBOUND' : 'INBOUND', status: fromMe ? 'SENT' : 'DELIVERED', body: text, wahaMessageId: messageId, rawPayload: body } }); }
+        catch (error: any) { if (error?.code !== 'P2002') throw error; }
+      }
     }
     await this.audit.logSystem(instance.tenantId, 'webhook.processed', instance.id, { event });
     return { accepted: true, duplicate: false };

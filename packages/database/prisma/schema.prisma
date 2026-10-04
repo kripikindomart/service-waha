@@ -186,6 +186,7 @@ model Message {
   createdAt      DateTime         @default(now())
   @@index([tenantId, createdAt])
   @@index([conversationId, createdAt])
+  @@unique([tenantId, wahaMessageId])
 }
 
 model WebhookEvent {
