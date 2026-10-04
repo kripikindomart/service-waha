@@ -21,6 +21,8 @@ export class MessagesService {
     const message = await this.db.message.findFirst({ where: { id: messageId, tenantId: user.tenantId, direction: 'OUTBOUND', conversation: { instanceId } }, include: { conversation: true } });
     if (!message) throw new NotFoundException('message_not_found');
     if (message.status !== 'FAILED') throw new BadRequestException('message_is_not_failed');
-    return this.sendText(user, instanceId, message.conversation.chatId, message.body ?? '');
+    const retried = await this.db.message.update({ where: { id: message.id }, data: { status: 'PENDING', rawPayload: { ...(message.rawPayload && typeof message.rawPayload === 'object' && !Array.isArray(message.rawPayload) ? message.rawPayload : {}), retryRequestedAt: new Date().toISOString() } } });
+    await this.queue.add('send-text', { messageId: retried.id }, { attempts: 5, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 1000, removeOnFail: 5000 });
+    return { id: retried.id, status: retried.status, retried: true };
   }
 }

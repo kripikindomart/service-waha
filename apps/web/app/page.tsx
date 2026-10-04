@@ -836,21 +836,23 @@ function InboxPanel({
         { method: "POST" },
         token,
       );
-      await Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: "success",
-        title: "Pesan dikirim ulang",
-        showConfirmButton: false,
-        timer: 2200,
-      });
-      setMessages(
-        await request<any[]>(
-          `/conversations/${selected.id}/messages`,
-          {},
-          token,
-        ),
-      );
+      await Swal.fire({ toast: true, position: "top-end", icon: "info", title: "Retry dieksekusi", text: "Menunggu hasil pengiriman...", showConfirmButton: false, timer: 2200 });
+      const deadline = Date.now() + 20000;
+      while (Date.now() < deadline) {
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        const latest = await request<any[]>(`/conversations/${selected.id}/messages`, {}, token);
+        setMessages(latest);
+        const result = latest.find((item) => item.id === message.id);
+        if (result?.status === "SENT") {
+          await Swal.fire({ toast: true, position: "top-end", icon: "success", title: "Pesan berhasil dikirim ulang", showConfirmButton: false, timer: 2500 });
+          return;
+        }
+        if (result?.status === "FAILED") {
+          await Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Retry gagal", text: "Pesan sudah dieksekusi ulang tetapi tetap gagal dikirim.", showConfirmButton: false, timer: 4000 });
+          return;
+        }
+      }
+      await Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "Retry masih diproses", text: "Status pengiriman belum final.", showConfirmButton: false, timer: 3500 });
     } catch (error) {
       await Swal.fire({
         icon: "error",
