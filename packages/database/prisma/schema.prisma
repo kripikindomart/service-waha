@@ -58,6 +58,7 @@ model Tenant {
   instances   WhatsappInstance[]
   conversations Conversation[]
   messages    Message[]
+  webhookEvents WebhookEvent[]
   auditLogs   AuditLog[]
 }
 
@@ -128,6 +129,7 @@ model WhatsappInstance {
   phoneNumber String?
   tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   conversations Conversation[]
+  webhookEvents WebhookEvent[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   @@unique([tenantId, name])
@@ -164,6 +166,21 @@ model Message {
   createdAt      DateTime         @default(now())
   @@index([tenantId, createdAt])
   @@index([conversationId, createdAt])
+}
+
+model WebhookEvent {
+  id          String           @id @default(cuid())
+  eventKey    String           @unique
+  tenantId    String
+  instanceId  String
+  event       String
+  payload     Json
+  processedAt DateTime?
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instance    WhatsappInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  @@index([tenantId, createdAt])
+  @@index([instanceId, createdAt])
 }
 
 model AuditLog {
