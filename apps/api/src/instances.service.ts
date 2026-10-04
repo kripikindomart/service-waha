@@ -1,0 +1,25 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import axios from 'axios';
+import { PrismaService } from './prisma.service';
+import { AuthUser } from './auth.types';
+
+@Injectable()
+export class InstancesService {
+  private readonly waha = axios.create({ baseURL: process.env.WAHA_BASE_URL ?? 'http://127.0.0.1:3000', headers: { 'X-Api-Key': process.env.WAHA_API_KEY ?? '' }, timeout: 15000 });
+  constructor(private readonly db: PrismaService) {}
+  list(user: AuthUser) { return this.db.whatsappInstance.findMany({ where: { tenantId: user.tenantId }, orderBy: { createdAt: 'desc' } }); }
+  async create(user: AuthUser, name: string) {
+    const instance = await this.db.whatsappInstance.create({ data: { tenantId: user.tenantId, name, wahaSession: `${user.tenantId}-${name}` } });
+    await this.waha.post('/api/sessions', { name: instance.wahaSession });
+    return instance;
+  }
+  start(user: AuthUser, id: string) { return this.control(user, id, 'start'); }
+  stop(user: AuthUser, id: string) { return this.control(user, id, 'stop'); }
+  private async control(user: AuthUser, id: string, action: 'start' | 'stop') {
+    const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
+    if (!instance) throw new NotFoundException('instance_not_found');
+    const response = await this.waha.post(`/api/sessions/${encodeURIComponent(instance.wahaSession)}/${action}`);
+    await this.db.whatsappInstance.update({ where: { id }, data: { status: action === 'start' ? 'STARTING' : 'STOPPED' } });
+    return response.data;
+  }
+}
