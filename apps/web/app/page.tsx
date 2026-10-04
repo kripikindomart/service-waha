@@ -41,7 +41,7 @@ export default function Home() {
   if (!hydrated)
     return (
       <main className="grid min-h-screen place-items-center bg-[#080d1b] text-cyan-300">
-        <div className="text-sm font-bold tracking-[.24em]">SERVICE WAHA</div>
+        <div className="text-sm font-bold tracking-[.24em]">WHATSAPP GATEWAY</div>
       </main>
     );
   if (!token)
@@ -99,7 +99,7 @@ function AuthScreen({ onAuth }: { onAuth: (token: string) => void }) {
               S
             </div>
             <span className="text-sm font-bold tracking-[.24em] text-cyan-300">
-              SERVICE WAHA
+              WHATSAPP GATEWAY
             </span>
           </div>
           <h1 className="max-w-xl text-6xl font-semibold leading-[1.02] tracking-tight">
@@ -118,7 +118,7 @@ function AuthScreen({ onAuth }: { onAuth: (token: string) => void }) {
         <div className="rounded-[2rem] border border-white/10 bg-white/[.06] p-8 shadow-2xl shadow-black/30 backdrop-blur-xl">
           <div className="mb-8 lg:hidden">
             <p className="text-sm font-bold tracking-[.24em] text-cyan-300">
-              SERVICE WAHA
+              WHATSAPP GATEWAY
             </p>
           </div>
           <p className="text-sm font-medium text-cyan-300">
@@ -419,9 +419,9 @@ function Dashboard({
             </div>
             <div>
               <p className="text-xs font-bold tracking-[.2em] text-cyan-300">
-                SERVICE WAHA
+                WHATSAPP GATEWAY
               </p>
-              <p className="text-sm text-slate-400">Operations dashboard</p>
+              <p className="text-sm text-slate-400">Gateway control center</p>
             </div>
           </div>
           <button
