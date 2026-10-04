@@ -221,6 +221,12 @@ function Dashboard({
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   useEffect(() => setDarkMode(localStorage.getItem("gateway_dark_mode") === "true"), []);
+  useEffect(() => {
+    if (!notice) return;
+    const isError = /gagal|error|tidak|belum/i.test(notice);
+    void Swal.fire({ toast: true, position: "top-end", icon: isError ? "error" : "success", title: notice, showConfirmButton: false, timer: 4500, timerProgressBar: true });
+    setNotice("");
+  }, [notice]);
   async function load() {
     setLoading(true);
     try {
@@ -483,11 +489,6 @@ function Dashboard({
             </button>
           </form>
         </div>
-        {notice && (
-          <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
-            {notice}
-          </div>
-        )}
         <div className="mb-8 grid gap-4 sm:grid-cols-3">
           <Stat label="Total instance" value={String(instances.length)} />
           <Stat
