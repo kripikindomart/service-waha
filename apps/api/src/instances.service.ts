@@ -22,7 +22,7 @@ export class InstancesService {
     if (!instance) throw new NotFoundException('instance_not_found');
     const response = await this.waha.get(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`);
     const status = String(response.data?.status ?? '').toUpperCase();
-    const mapped = status.includes('WORK') ? 'WORKING' : status.includes('START') ? 'STARTING' : status.includes('STOP') ? 'STOPPED' : instance.status;
+    const mapped = status.includes('WORK') ? 'WORKING' : status.includes('START') || status.includes('SCAN_QR') || status.includes('AUTHENTICAT') ? 'STARTING' : status.includes('STOP') ? 'STOPPED' : status.includes('FAIL') ? 'FAILED' : instance.status;
     if (mapped !== instance.status) await this.db.whatsappInstance.update({ where: { id }, data: { status: mapped as any } });
     return response.data;
   }
@@ -39,7 +39,8 @@ export class InstancesService {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
     const response = await this.waha.post(`/api/sessions/${encodeURIComponent(instance.wahaSession)}/${action}`, {});
-    await this.db.whatsappInstance.update({ where: { id }, data: { status: action === 'start' ? 'STARTING' : 'STOPPED' } });
+    const wahaStatus = String(response.data?.status ?? '').toUpperCase();
+    await this.db.whatsappInstance.update({ where: { id }, data: { status: action === 'start' && wahaStatus.includes('FAIL') ? 'FAILED' : action === 'start' ? 'STARTING' : 'STOPPED' } });
     await this.audit.log(user, `instance.${action}`, id);
     return response.data;
   }
