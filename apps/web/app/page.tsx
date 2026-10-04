@@ -410,46 +410,46 @@ function Dashboard({
     }
   }
   return (
-    <main className="min-h-screen bg-[#080d1b] text-white">
-      <header className="border-b border-white/10 bg-[#0a1122]/90 backdrop-blur">
+    <main className="min-h-screen bg-[#f6f8fc] text-slate-900">
+      <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400 font-black text-slate-950">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 font-black text-white shadow-lg shadow-indigo-200">
               S
             </div>
             <div>
-              <p className="text-xs font-bold tracking-[.2em] text-cyan-300">
+              <p className="text-xs font-bold tracking-[.2em] text-indigo-600">
                 WHATSAPP GATEWAY
               </p>
-              <p className="text-sm text-slate-400">Gateway control center</p>
+              <p className="text-sm text-slate-500">Gateway control center</p>
             </div>
           </div>
           <button
             onClick={onLogout}
-            className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/10"
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
           >
             Keluar
           </button>
         </div>
       </header>
-      <nav className="border-b border-white/10 bg-[#0c1428]">
+      <nav className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-6 py-2 text-sm">
-          <span className="rounded-lg bg-violet-500/15 px-4 py-2 font-semibold text-violet-200">Overview</span>
-          <span className="rounded-lg px-4 py-2 text-slate-400">Inbox</span>
-          <span className="rounded-lg px-4 py-2 text-slate-400">Contacts</span>
-          <span className="rounded-lg px-4 py-2 text-slate-400">Automations</span>
-          <span className="rounded-lg px-4 py-2 text-slate-400">Team & roles</span>
-          <span className="rounded-lg px-4 py-2 text-slate-400">Usage</span>
+          <span className="rounded-lg bg-indigo-50 px-4 py-2 font-semibold text-indigo-700">Overview</span>
+          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Inbox</span>
+          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Contacts</span>
+          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Automations</span>
+          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Team & roles</span>
+          <span className="rounded-lg px-4 py-2 text-slate-500 hover:bg-slate-50">Usage</span>
         </div>
       </nav>
       <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-sm font-medium text-cyan-300">Workspace</p>
+            <p className="text-sm font-medium text-indigo-600">Workspace</p>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight">
               WhatsApp instances
             </h1>
-            <p className="mt-3 text-slate-400">
+            <p className="mt-3 text-slate-500">
               Pair dan pantau nomor WhatsApp kamu dari sini.
             </p>
           </div>
@@ -457,20 +457,20 @@ function Dashboard({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-60 rounded-xl border border-white/10 bg-white/[.06] px-4 py-3 outline-none ring-cyan-400 placeholder:text-slate-500 focus:ring-2"
+              className="w-60 rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none ring-indigo-400 placeholder:text-slate-400 focus:ring-2"
               placeholder="Nama instance"
             />
             <button
               type="submit"
               disabled={creating || !name.trim()}
-              className="rounded-xl bg-cyan-400 px-5 py-3 font-bold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {creating ? "Menghubungkan..." : "Tambah"}
             </button>
           </form>
         </div>
         {notice && (
-          <div className="mb-6 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">
+          <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
             {notice}
           </div>
         )}
@@ -491,10 +491,10 @@ function Dashboard({
             )}
           />
         </div>
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.04] shadow-2xl shadow-black/20">
-          <div className="border-b border-white/10 px-6 py-5">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-6 py-5">
             <h2 className="font-semibold">Connection list</h2>
-            <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+            <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
               <span>
                 <i className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-rose-500" />
                 Tidak konek
@@ -522,7 +522,7 @@ function Dashboard({
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-white/10">
+            <div className="divide-y divide-slate-100">
               {instances.map((instance) => (
                 <div
                   key={instance.id}
@@ -640,8 +640,8 @@ function statusLabel(status: string) {
 }
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[.04] p-5">
-      <p className="text-sm text-slate-400">{label}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm text-slate-500">{label}</p>
       <p className="mt-2 text-3xl font-semibold">{value}</p>
     </div>
   );
