@@ -1401,6 +1401,9 @@ function ContactsPanel({
   const [saving, setSaving] = useState(false);
   const [instances, setInstances] = useState<any[]>([]);
   const [instanceId, setInstanceId] = useState("");
+  const [preview, setPreview] = useState<any | null>(null);
+  const [previewQuery, setPreviewQuery] = useState("");
+  const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
   async function load() {
     setContacts(
       await request<any[]>(
@@ -1425,32 +1428,32 @@ function ContactsPanel({
       });
       return;
     }
-    await Swal.fire({
-      title:
-        source === "groups"
-          ? "Mengambil anggota group..."
-          : "Mengambil kontak WhatsApp...",
-      text: "Proses dapat membutuhkan waktu beberapa saat.",
+    let elapsed = 0;
+    const progressTitle = source === "groups" ? "Mengambil anggota group..." : "Mengambil kontak WhatsApp...";
+    Swal.fire({
+      title: progressTitle,
+      html: '<p id="import-progress-text">Menghubungkan ke instance WhatsApp...</p><p id="import-progress-time" class="mt-2 text-xs text-slate-400">Waktu berjalan: 0 detik</p>',
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
+    const progressTimer = window.setInterval(() => {
+      elapsed += 1;
+      const text = document.getElementById("import-progress-text");
+      const time = document.getElementById("import-progress-time");
+      if (elapsed >= 3 && text) text.textContent = source === "groups" ? "Membaca daftar group dan anggota..." : "Membaca daftar kontak dari WAHA...";
+      if (elapsed >= 10 && text) text.textContent = "Masih diproses. Jangan tutup halaman ini...";
+      if (time) time.textContent = `Waktu berjalan: ${elapsed} detik`;
+    }, 1000);
     try {
-      const result = await request<{ imported: number; groups?: number }>(
-        `/contacts/import/${instanceId}`,
+      const result = await request<any>(
+        `/contacts/import/${instanceId}/preview`,
         { method: "POST", body: JSON.stringify({ source }) },
         token,
       );
       Swal.close();
-      await load();
-      await Swal.fire({
-        icon: "success",
-        title: "Import selesai",
-        text:
-          source === "groups"
-            ? `${result.imported} anggota dari ${result.groups ?? 0} group diproses.`
-            : `${result.imported} kontak diproses.`,
-        confirmButtonText: "Selesai",
-      });
+      setPreview(result);
+      setPreviewQuery("");
+      setSelectedPhones(result.contacts.filter((item: any) => !item.alreadyExists).map((item: any) => item.phone));
     } catch (error) {
       Swal.close();
       await Swal.fire({
@@ -1459,8 +1462,33 @@ function ContactsPanel({
         text:
           error instanceof Error
             ? error.message
-            : "Pastikan session sudah terkoneksi dan NOWEB Store aktif.",
+          : "Pastikan session sudah terkoneksi dan NOWEB Store aktif.",
       });
+    } finally {
+      window.clearInterval(progressTimer);
+    }
+  }
+  const visiblePreview = (preview?.contacts ?? []).filter((item: any) => {
+    const value = `${item.name} ${item.phone} ${item.groupName ?? ""}`.toLowerCase();
+    return value.includes(previewQuery.toLowerCase().trim());
+  });
+  function togglePreviewPhone(phone: string) {
+    setSelectedPhones((current) => current.includes(phone) ? current.filter((item) => item !== phone) : [...current, phone]);
+  }
+  function selectVisiblePreview(select: boolean) {
+    const visiblePhones = visiblePreview.filter((item: any) => !item.alreadyExists).map((item: any) => item.phone);
+    setSelectedPhones((current) => select ? Array.from(new Set([...current, ...visiblePhones])) : current.filter((phone) => !visiblePhones.includes(phone)));
+  }
+  async function commitPreview() {
+    if (!preview || !selectedPhones.length) return;
+    const selected = preview.contacts.filter((item: any) => selectedPhones.includes(item.phone));
+    try {
+      const result = await request<{ imported: number }>(`/contacts/import/${instanceId}/commit`, { method: "POST", body: JSON.stringify({ source: preview.source, contacts: selected }) }, token);
+      setPreview(null);
+      await load();
+      await Swal.fire({ toast: true, position: "top-end", icon: "success", title: `${result.imported} kontak ditambahkan`, showConfirmButton: false, timer: 2400 });
+    } catch (error) {
+      await Swal.fire({ icon: "error", title: "Gagal menyimpan kontak", text: error instanceof Error ? error.message : "Terjadi kesalahan." });
     }
   }
   async function create(event: FormEvent) {
@@ -1663,6 +1691,39 @@ function ContactsPanel({
           </form>
         </div>
       </div>
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">Preview data WhatsApp</h2>
+                <p className="mt-1 text-sm text-slate-500">{preview.total} data ditemukan, {preview.newCount} baru, {preview.existingCount} sudah tersimpan.</p>
+              </div>
+              <button type="button" onClick={() => setPreview(null)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">Tutup</button>
+            </div>
+            <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <input value={previewQuery} onChange={(event) => setPreviewQuery(event.target.value)} placeholder="Filter nama, nomor, atau group" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 sm:max-w-sm" />
+              <div className="flex gap-2 text-sm">
+                <button type="button" onClick={() => selectVisiblePreview(true)} className="rounded-lg border border-indigo-200 px-3 py-2 font-semibold text-indigo-700 hover:bg-indigo-50">Pilih tampil</button>
+                <button type="button" onClick={() => selectVisiblePreview(false)} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-slate-50">Batal pilih</button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              {visiblePreview.length === 0 ? <p className="p-8 text-sm text-slate-500">Data tidak ditemukan.</p> : visiblePreview.map((item: any) => (
+                <label key={`${item.phone}-${item.groupId ?? "contact"}`} className={`flex cursor-pointer items-center gap-3 border-b border-slate-100 px-6 py-3 hover:bg-slate-50 ${item.alreadyExists ? "opacity-60" : ""}`}>
+                  <input type="checkbox" disabled={item.alreadyExists} checked={selectedPhones.includes(item.phone)} onChange={() => togglePreviewPhone(item.phone)} className="h-4 w-4 accent-indigo-600" />
+                  <span className="min-w-0 flex-1"><span className="block font-medium text-slate-900">{item.name || item.phone}</span><span className="block text-sm text-slate-500">{item.phone}{item.groupName ? ` · ${item.groupName}` : ""}</span></span>
+                  <span className={`text-xs font-semibold ${item.alreadyExists ? "text-slate-400" : "text-emerald-600"}`}>{item.alreadyExists ? "Sudah ada" : "Kontak baru"}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-500">{selectedPhones.length} kontak dipilih</p>
+              <button type="button" disabled={!selectedPhones.length} onClick={commitPreview} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">Tambahkan yang dipilih</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
