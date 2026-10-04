@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum InstanceStatus {
+  CREATED
+  STARTING
+  WORKING
+  STOPPED
+  FAILED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  isSuperAdmin  Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  memberships   TenantMember[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+}
+
+model Tenant {
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  members     TenantMember[]
+  roles       Role[]
+  instances   WhatsappInstance[]
+  conversations Conversation[]
+  messages    Message[]
+  auditLogs   AuditLog[]
+}
+
+model TenantMember {
+  id        String       @id @default(cuid())
+  tenantId  String
+  userId    String
+  status    MemberStatus @default(ACTIVE)
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles     MemberRole[]
+  createdAt DateTime     @default(now())
+  @@unique([tenantId, userId])
+  @@index([userId])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members     MemberRole[]
+  permissions RolePermission[]
+  @@unique([tenantId, name])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model MemberRole {
+  memberId String
+  roleId   String
+  member   TenantMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  role     Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@id([memberId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@index([userId, expiresAt])
+}
+
+model WhatsappInstance {
+  id          String         @id @default(cuid())
+  tenantId    String
+  name        String
+  wahaSession String
+  status      InstanceStatus @default(CREATED)
+  phoneNumber String?
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  @@unique([tenantId, name])
+  @@unique([wahaSession])
+  @@index([tenantId, status])
+}
+
+model Conversation {
+  id         String           @id @default(cuid())
+  tenantId   String
+  instanceId String
+  chatId     String
+  title      String?
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instance   WhatsappInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  messages   Message[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  @@unique([instanceId, chatId])
+  @@index([tenantId, updatedAt])
+}
+
+model Message {
+  id             String           @id @default(cuid())
+  tenantId       String
+  conversationId String
+  wahaMessageId  String?
+  direction      MessageDirection
+  status         MessageStatus    @default(PENDING)
+  body           String?
+  rawPayload     Json?
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  @@index([tenantId, createdAt])
+  @@index([conversationId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  userId    String?
+  action    String
+  resource  String?
+  metadata  Json?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
+}
