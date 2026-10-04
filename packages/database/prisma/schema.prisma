@@ -59,6 +59,7 @@ model Tenant {
   conversations Conversation[]
   messages    Message[]
   webhookEvents WebhookEvent[]
+  webhookEndpoints WebhookEndpoint[]
   auditLogs   AuditLog[]
 }
 
@@ -127,7 +128,9 @@ model WhatsappInstance {
   wahaSession String
   status      InstanceStatus @default(CREATED)
   phoneNumber String?
+  webhookEndpointId String?
   tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  webhookEndpoint WebhookEndpoint? @relation(fields: [webhookEndpointId], references: [id], onDelete: SetNull)
   conversations Conversation[]
   webhookEvents WebhookEvent[]
   createdAt   DateTime       @default(now())
@@ -135,6 +138,23 @@ model WhatsappInstance {
   @@unique([tenantId, name])
   @@unique([wahaSession])
   @@index([tenantId, status])
+}
+
+model WebhookEndpoint {
+  id          String             @id @default(cuid())
+  tenantId    String
+  name        String
+  url         String
+  secret      String?
+  events      String[]           @default(["message", "message.any", "message.ack", "session.status"])
+  isDefault   Boolean            @default(false)
+  enabled     Boolean            @default(true)
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instances   WhatsappInstance[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  @@unique([tenantId, name])
+  @@index([tenantId, isDefault])
 }
 
 model Conversation {
