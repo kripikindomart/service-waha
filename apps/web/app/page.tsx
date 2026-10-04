@@ -220,6 +220,7 @@ function Dashboard({
   const [qrInstanceId, setQrInstanceId] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeModule, setActiveModule] = useState("overview");
   useEffect(() => setDarkMode(localStorage.getItem("gateway_dark_mode") === "true"), []);
   useEffect(() => {
     if (!notice) return;
@@ -440,7 +441,7 @@ function Dashboard({
           </div>
         </div>
       </header>
-      <nav data-collapsed={sidebarCollapsed} className={`${sidebarCollapsed ? "w-20" : "w-64"} fixed inset-y-0 left-0 z-30 hidden border-r border-slate-200 bg-white transition-all md:block`}>
+      <nav data-collapsed={sidebarCollapsed} onClick={(event) => { const label = (event.target as HTMLElement).textContent?.trim().toLowerCase(); const module = label?.includes("inbox") ? "inbox" : label?.includes("contacts") ? "contacts" : label?.includes("automations") ? "automations" : label?.includes("team") ? "team" : label?.includes("usage") ? "usage" : label?.includes("settings") ? "settings" : "overview"; setActiveModule(module); }} className={`${sidebarCollapsed ? "w-20" : "w-64"} fixed inset-y-0 left-0 z-30 hidden border-r border-slate-200 bg-white transition-all md:block`}>
         <div className="flex h-full flex-col px-4 py-6 text-sm">
           <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} gap-3 px-3 pb-8`}>
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 font-black text-white">W</div>
@@ -462,7 +463,8 @@ function Dashboard({
           <div className="mt-auto rounded-2xl bg-slate-50 p-4 text-xs text-slate-500"><p className="font-semibold text-slate-700">Gateway status</p><p className="mt-2 flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-emerald-500" />All systems operational</p></div>
         </div>
       </nav>
-      <div className={`${sidebarCollapsed ? "md:ml-20 max-w-none" : "md:ml-64 max-w-7xl"} mx-0 px-6 py-10 transition-all`}>
+      {activeModule !== "overview" && <ModulePanel module={activeModule} collapsed={sidebarCollapsed} />}
+      <div className={`${activeModule !== "overview" ? "hidden" : ""} ${sidebarCollapsed ? "md:ml-20 max-w-none" : "md:ml-64 max-w-7xl"} mx-0 px-6 py-10 transition-all`}>
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="text-sm font-medium text-indigo-600">Workspace</p>
@@ -608,6 +610,19 @@ function Dashboard({
       )}
     </main>
   );
+}
+
+function ModulePanel({ module, collapsed }: { module: string; collapsed: boolean }) {
+  const modules: Record<string, { title: string; description: string; items: string[] }> = {
+    inbox: { title: "Inbox", description: "Kelola percakapan WhatsApp dari semua instance dalam satu tempat.", items: ["Conversation list", "Unread queue", "Quick reply"] },
+    contacts: { title: "Contacts", description: "Simpan dan kelola kontak pelanggan di workspace ini.", items: ["Contact directory", "Tags and segments", "Import contacts"] },
+    automations: { title: "Automations", description: "Bangun alur otomatis untuk pesan masuk dan keluar.", items: ["Trigger rules", "Templates", "Execution history"] },
+    team: { title: "Team & roles", description: "Atur anggota workspace dan permission berbasis role.", items: ["Members", "Roles", "Permission matrix"] },
+    usage: { title: "Usage & logs", description: "Pantau aktivitas gateway, pesan, webhook, dan audit log.", items: ["Message volume", "Webhook events", "Audit logs"] },
+    settings: { title: "Settings", description: "Konfigurasi workspace, API access, dan preferensi gateway.", items: ["Workspace profile", "API keys", "Webhook settings"] },
+  };
+  const current = modules[module] ?? modules.inbox;
+  return <div className={`${collapsed ? "md:ml-20" : "md:ml-64"} mx-auto max-w-5xl px-6 py-12 transition-all`}><div className="mb-8"><p className="text-sm font-semibold text-indigo-600">Workspace module</p><h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-900">{current.title}</h1><p className="mt-3 max-w-2xl text-slate-500">{current.description}</p></div><div className="grid gap-5 md:grid-cols-3">{current.items.map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="mb-5 h-10 w-10 rounded-xl bg-indigo-50" /><h2 className="font-semibold text-slate-900">{item}</h2><p className="mt-2 text-sm text-slate-500">Module ini siap dihubungkan ke API tenant.</p><button className="mt-5 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Buka modul</button></div>)}</div></div>;
 }
 
 function Field({
