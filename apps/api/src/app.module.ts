@@ -17,10 +17,12 @@ import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
 import { RolesController } from './roles.controller';
 import { RolesService } from './roles.service';
+import { AuditController } from './audit.controller';
+import { AuditService } from './audit.service';
 
 @Module({
   imports: [JwtModule.register({ secret: process.env.JWT_SECRET ?? 'change-me', signOptions: { expiresIn: '12h' } }), BullModule.forRoot({ connection: { url: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379' } }), BullModule.registerQueue({ name: 'messages' })],
-  controllers: [HealthController, AuthController, InstancesController, MessagesController, WebhooksController, MembersController, RolesController],
-  providers: [PrismaService, AuthService, InstancesService, RedisService, PermissionGuard, MessagesService, MessagesProcessor, MembersService, RolesService],
+  controllers: [HealthController, AuthController, InstancesController, MessagesController, WebhooksController, MembersController, RolesController, AuditController],
+  providers: [PrismaService, AuthService, InstancesService, RedisService, PermissionGuard, MessagesService, MessagesProcessor, MembersService, RolesService, AuditService],
 })
 export class AppModule {}

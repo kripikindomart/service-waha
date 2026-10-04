@@ -6,5 +6,5 @@ export const RequirePermissions = (...permissions: string[]) => SetMetadata(PERM
 export const CORE_PERMISSIONS = [
   'instance.read', 'instance.create', 'instance.control',
   'member.read', 'member.create', 'member.update',
-  'role.read', 'role.manage', 'message.read', 'message.send',
+  'role.read', 'role.manage', 'message.read', 'message.send', 'audit.read',
 ] as const;
