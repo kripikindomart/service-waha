@@ -555,25 +555,25 @@ function Dashboard({
                     <button
                       disabled={instance.status === "WORKING"}
                       onClick={() => action(instance, "start")}
-                      className="rounded-lg bg-cyan-400 px-3 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      className={instance.status === "WORKING" ? "rounded-lg bg-emerald-100 px-3 py-2 text-sm font-bold text-emerald-700" : "rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white shadow-sm hover:bg-indigo-500"}
                     >
                       {instance.status === "WORKING" ? "Connected" : "Start"}
                     </button>
                     <button
                       onClick={() => showQr(instance)}
-                      className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+                      className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
                     >
                       QR
                     </button>
                     <button
                       onClick={() => action(instance, "stop")}
-                      className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10"
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                     >
                       Stop
                     </button>
                     <button
                       onClick={() => remove(instance)}
-                      className="rounded-lg border border-rose-400/30 px-3 py-2 text-sm text-rose-300 hover:bg-rose-400/10"
+                      className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
                     >
                       Hapus
                     </button>
