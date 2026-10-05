@@ -127,6 +127,7 @@ model WhatsappInstance {
   tenantId    String
   name        String
   wahaSession String
+  engine      String   @default("NOWEB")
   status      InstanceStatus @default(CREATED)
   phoneNumber String?
   webhookEndpointId String?

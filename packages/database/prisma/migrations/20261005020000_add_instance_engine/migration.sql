@@ -1,0 +1,1 @@
+ALTER TABLE "WhatsappInstance" ADD COLUMN "engine" TEXT NOT NULL DEFAULT 'NOWEB';

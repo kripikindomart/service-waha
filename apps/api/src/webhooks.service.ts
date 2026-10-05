@@ -2,12 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from './prisma.service';
 import { AuthUser } from './auth.types';
+import { wahaClient } from './waha.client';
 
 const DEFAULT_EVENTS = ['message', 'message.any', 'message.ack', 'session.status'];
 
 @Injectable()
 export class WebhooksService {
-  private readonly waha = axios.create({ baseURL: process.env.WAHA_BASE_URL ?? 'http://127.0.0.1:3000', headers: { 'X-Api-Key': process.env.WAHA_API_KEY ?? '' }, timeout: 15000 });
   constructor(private readonly db: PrismaService) {}
   list(user: AuthUser) { return this.db.webhookEndpoint.findMany({ where: { tenantId: user.tenantId }, include: { _count: { select: { instances: true } } }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }] }); }
   async create(user: AuthUser, input: { name: string; url: string; secret?: string; events?: string[]; isDefault?: boolean }) {
@@ -30,9 +30,9 @@ export class WebhooksService {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id: instanceId, tenantId }, include: { webhookEndpoint: true } });
     if (!instance) throw new NotFoundException('instance_not_found');
     const endpoint = instance.webhookEndpoint ?? await this.db.webhookEndpoint.findFirst({ where: { tenantId, isDefault: true, enabled: true } });
-    const current = await this.waha.get(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`);
+    const waha = wahaClient(instance.engine); const current = await waha.get(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`);
     const config = { ...(current.data?.config ?? {}), noweb: { markOnline: true }, webhooks: endpoint ? [{ url: endpoint.url, events: endpoint.events, ...(endpoint.secret ? { hmac: { key: endpoint.secret } } : {}) }] : [] };
-    await this.waha.put(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`, { name: instance.wahaSession, config });
+    await waha.put(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`, { name: instance.wahaSession, config });
     return { instanceId, webhookEndpointId: endpoint?.id ?? null, url: endpoint?.url ?? null, events: endpoint?.events ?? [] };
   }
 }

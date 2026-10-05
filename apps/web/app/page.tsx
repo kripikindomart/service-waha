@@ -12,6 +12,7 @@ type Instance = {
   name: string;
   wahaSession: string;
   status: string;
+  engine?: "NOWEB" | "GOWS";
   createdAt: string;
 };
 
@@ -218,6 +219,7 @@ function Dashboard({
 }) {
   const [instances, setInstances] = useState<Instance[]>([]);
   const [name, setName] = useState("");
+  const [engine, setEngine] = useState<"NOWEB" | "GOWS">("NOWEB");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -326,10 +328,11 @@ function Dashboard({
     try {
       await request(
         "/instances",
-        { method: "POST", body: JSON.stringify({ name: name.trim() }) },
+        { method: "POST", body: JSON.stringify({ name: name.trim(), engine }) },
         token,
       );
       setName("");
+      setEngine("NOWEB");
       setNotice("Instance dibuat. Tekan Start untuk memunculkan QR.");
       await load();
     } catch (e) {
@@ -604,13 +607,17 @@ function Dashboard({
               Pair dan pantau nomor WhatsApp kamu dari sini.
             </p>
           </div>
-          <form onSubmit={create} className="flex gap-2">
+          <form onSubmit={create} className="flex flex-wrap gap-2">
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-60 rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none ring-indigo-400 placeholder:text-slate-400 focus:ring-2"
               placeholder="Nama instance"
             />
+            <select value={engine} onChange={(e) => setEngine(e.target.value as "NOWEB" | "GOWS")} className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="NOWEB">NOWEB</option>
+              <option value="GOWS">GOWS</option>
+            </select>
             <button
               type="submit"
               disabled={creating || !name.trim()}
@@ -681,7 +688,7 @@ function Dashboard({
                     <div>
                       <p className="font-semibold">{instance.name}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {statusLabel(instance.status)} · {instance.wahaSession}
+                        {statusLabel(instance.status)} · {instance.engine ?? "NOWEB"} · {instance.wahaSession}
                       </p>
                     </div>
                   </div>
