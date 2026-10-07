@@ -4,7 +4,8 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "seed": "node seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.11",

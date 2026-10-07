@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './env';
 import rateLimit from '@fastify/rate-limit';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';

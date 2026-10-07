@@ -10,6 +10,7 @@ class UpdateContactDto { @IsOptional() @IsString() name?: string; @IsOptional() 
 class ImportContactsDto { @IsString() source!: 'contacts' | 'groups'; }
 class ImportPreviewDto { @IsString() source!: 'contacts' | 'groups'; }
 class ImportCommitDto { @IsString() source!: 'contacts' | 'groups'; @IsArray() contacts!: Array<{ phone: string; wahaId?: string; name?: string; groupId?: string; groupName?: string }>; }
+class BulkContactDto { @IsArray() contacts!: Array<{ name: string; phone: string; email?: string; company?: string; customFields?: Record<string, string> }>; }
 
 @Controller('contacts')
 @UseGuards(AuthGuard, PermissionGuard)
@@ -17,6 +18,7 @@ export class ContactsController {
   constructor(private readonly contacts: ContactsService) {}
   @Get() @RequirePermissions('contact.read') list(@Req() req: any, @Query('q') q?: string) { return this.contacts.list(req.user, q); }
   @Post() @RequirePermissions('contact.manage') create(@Req() req: any, @Body() body: ContactDto) { return this.contacts.create(req.user, body); }
+  @Post('bulk') @RequirePermissions('contact.manage') bulk(@Req() req: any, @Body() body: BulkContactDto) { return this.contacts.bulkCreate(req.user, body.contacts); }
   @Post('import/:instanceId') @RequirePermissions('contact.manage') import(@Req() req: any, @Param('instanceId') instanceId: string, @Body() body: ImportContactsDto) { return this.contacts.importFromWaha(req.user, instanceId, body.source); }
   @Post('import/:instanceId/preview') @RequirePermissions('contact.manage') preview(@Req() req: any, @Param('instanceId') instanceId: string, @Body() body: ImportPreviewDto) { return this.contacts.previewFromWaha(req.user, instanceId, body.source); }
   @Post('import/:instanceId/commit') @RequirePermissions('contact.manage') commit(@Req() req: any, @Param('instanceId') instanceId: string, @Body() body: ImportCommitDto) { return this.contacts.commitPreview(req.user, instanceId, body.source, body.contacts); }

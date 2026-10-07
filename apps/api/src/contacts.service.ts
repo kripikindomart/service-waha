@@ -5,12 +5,30 @@ import { AuthUser } from './auth.types';
 import { wahaClient } from './waha.client';
 
 export function normalizePhone(value: string) { return value.trim().replace(/[^0-9+]/g, '').replace(/^\+/, ''); }
+export function isValidPhoneIdentity(value: string) {
+  const identity = value.trim().toLowerCase();
+  if (identity.endsWith('@lid') || identity.endsWith('@g.us') || identity.endsWith('@broadcast')) return false;
+  const phone = normalizePhone(identity.split('@')[0]);
+  return phone.length >= 7 && phone.length <= 15;
+}
 
 @Injectable()
 export class ContactsService {
   constructor(private readonly db: PrismaService) {}
   list(user: AuthUser, query?: string) { const q = query?.trim(); return this.db.contact.findMany({ where: { tenantId: user.tenantId, ...(q ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { phone: { contains: q } }, { email: { contains: q, mode: 'insensitive' } }] } : {}) }, orderBy: [{ name: 'asc' }, { createdAt: 'desc' }] }); }
   async create(user: AuthUser, input: { name: string; phone: string; email?: string; company?: string; notes?: string; tags?: string[] }) { const phone = normalizePhone(input.phone); try { return await this.db.contact.create({ data: { tenantId: user.tenantId, name: input.name.trim(), phone, email: input.email?.trim() || undefined, company: input.company?.trim() || undefined, notes: input.notes?.trim() || undefined, tags: input.tags ?? [] } }); } catch (error: any) { if (error?.code === 'P2002') throw new ConflictException('contact_phone_already_exists'); throw error; } }
+  async bulkCreate(user: AuthUser, inputs: Array<{ name: string; phone: string; email?: string; company?: string; customFields?: Record<string, string> }>) {
+    let imported = 0;
+    const contacts: any[] = [];
+    for (const input of inputs) {
+      const phone = normalizePhone(String(input.phone ?? ''));
+      if (!phone || phone.length < 7 || phone.length > 15) continue;
+      const contact = await this.db.contact.upsert({ where: { tenantId_phone: { tenantId: user.tenantId, phone } }, update: { name: String(input.name || phone).trim(), email: input.email?.trim() || undefined, company: input.company?.trim() || undefined, customFields: input.customFields ?? undefined }, create: { tenantId: user.tenantId, name: String(input.name || phone).trim(), phone, email: input.email?.trim() || undefined, company: input.company?.trim() || undefined, customFields: input.customFields ?? undefined } });
+      contacts.push(contact);
+      imported++;
+    }
+    return { imported, contacts };
+  }
   async importFromWaha(user: AuthUser, instanceId: string, source: 'contacts' | 'groups') {
     const instance = await this.db.whatsappInstance.findFirst({ where: { id: instanceId, tenantId: user.tenantId } });
     if (!instance) throw new NotFoundException('instance_not_found');
@@ -65,13 +83,13 @@ export class ContactsService {
   private async fetchContacts(instance: any) {
     const response = await wahaClient(instance.engine).get('/api/contacts/all', { params: { session: instance.wahaSession, limit: 1000, offset: 0 } });
     const items = Array.isArray(response.data) ? response.data : response.data?.data ?? [];
-    return items.map((item: any) => { const wahaId = String(item.id ?? item.chatId ?? item._serialized ?? ''); const phone = normalizePhone(wahaId.split('@')[0]); return { phone, wahaId, name: item.name ?? item.pushname ?? item.pushName ?? phone }; }).filter((item: any) => item.phone);
+    return items.map((item: any) => { const wahaId = String(item.id ?? item.chatId ?? item._serialized ?? ''); const phone = normalizePhone(wahaId.split('@')[0]); return { phone, wahaId, name: item.name ?? item.pushname ?? item.pushName ?? phone }; }).filter((item: any) => isValidPhoneIdentity(item.wahaId));
   }
   private async fetchGroupParticipants(instance: any) {
     const response = await wahaClient(instance.engine).get(`/api/${encodeURIComponent(instance.wahaSession)}/groups`, { params: { limit: 1000, offset: 0 } });
     const groups = Array.isArray(response.data) ? response.data : response.data?.data ?? [];
     const result: any[] = [];
-    const waha = wahaClient(instance.engine); for (const group of groups) { const groupId = String(group.id ?? group.groupId ?? ''); if (!groupId) continue; const participantsResponse = await waha.get(`/api/${encodeURIComponent(instance.wahaSession)}/groups/${encodeURIComponent(groupId)}/participants/v2`); const participants = Array.isArray(participantsResponse.data) ? participantsResponse.data : participantsResponse.data?.data ?? participantsResponse.data?.participants ?? []; for (const participant of participants) { const rawId = typeof participant === 'string' ? participant : participant.id ?? participant.phone ?? participant.jid; const phone = normalizePhone(String(rawId ?? '').split('@')[0]); if (phone) result.push({ phone, wahaId: String(rawId), name: participant.name ?? participant.pushName ?? phone, groupId, groupName: group.subject ?? group.name ?? groupId }); } }
+    const waha = wahaClient(instance.engine); for (const group of groups) { const groupId = String(group.id ?? group.groupId ?? ''); if (!groupId) continue; const participantsResponse = await waha.get(`/api/${encodeURIComponent(instance.wahaSession)}/groups/${encodeURIComponent(groupId)}/participants/v2`); const participants = Array.isArray(participantsResponse.data) ? participantsResponse.data : participantsResponse.data?.data ?? participantsResponse.data?.participants ?? []; for (const participant of participants) { const rawId = typeof participant === 'string' ? participant : participant.id ?? participant.phone ?? participant.jid; const identity = String(rawId ?? ''); const phone = normalizePhone(identity.split('@')[0]); if (isValidPhoneIdentity(identity)) result.push({ phone, wahaId: identity, name: participant.name ?? participant.pushName ?? phone, groupId, groupName: group.subject ?? group.name ?? groupId }); } }
     return Array.from(new Map(result.map((item) => [item.phone, item])).values());
   }
   private async enableStore(instance: any) { const waha = wahaClient(instance.engine); const current = await waha.get(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`); const config = instance.engine === 'GOWS' ? { ...(current.data?.config ?? {}), gows: { ...(current.data?.config?.gows ?? {}), storage: { messages: true, groups: true, chats: true, contacts: true, labels: true } } } : { ...(current.data?.config ?? {}), noweb: { ...(current.data?.config?.noweb ?? {}), store: { enabled: true, fullSync: true } } }; await waha.put(`/api/sessions/${encodeURIComponent(instance.wahaSession)}`, { name: instance.wahaSession, config }); }

@@ -34,34 +34,198 @@ enum MessageStatus {
   FAILED
 }
 
+enum BlastStatus {
+  DRAFT
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum BlastRecipientStatus {
+  PENDING
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum AiAgentScope {
+  GLOBAL
+  CONTACT
+  GROUP
+}
+
+enum AiAgentActivationMode {
+  ALWAYS
+  KEYWORD
+  MANUAL
+}
+
+enum AiAgentMatchType {
+  EXACT
+  CONTAINS
+  REGEX
+}
+
+enum AiAgentTargetType {
+  CONTACT
+  GROUP
+}
+
+enum AiAgentSessionStatus {
+  ACTIVE
+  PAUSED
+  HANDED_OFF
+  EXPIRED
+  CLOSED
+}
+
+enum AiAgentActivatedBy {
+  ALWAYS
+  KEYWORD
+  MANUAL
+  API
+}
+
+enum AiAgentGroupResponseMode {
+  ALL
+  MENTION_ONLY
+  REPLY_ONLY
+  KEYWORD_ONLY
+}
+
+enum AiAgentGroupMemoryMode {
+  SHARED
+  PER_MEMBER
+}
+
+enum AiAgentExecutionStatus {
+  PROCESSING
+  QUEUED
+  COMPLETED
+  FALLBACK
+  SKIPPED
+  FAILED
+}
+
+enum AgentKnowledgeType {
+  TEXT
+  DATA_SHEET
+  EXTERNAL_API
+  CONTACTS
+  GROUP_PARTICIPANTS
+  DOCUMENT
+}
+
+enum AgentDraftStatus {
+  DRAFT
+  READY_FOR_REVIEW
+  APPROVED
+  CONVERTED
+  ARCHIVED
+}
+
+enum AgentBuilderSessionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AgentEvaluationStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  passwordHash  String
-  name          String
-  isSuperAdmin  Boolean        @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  memberships   TenantMember[]
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  name           String
+  isSuperAdmin   Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  memberships    TenantMember[]
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+  apiKeysCreated ApiKey[]       @relation("ApiKeyCreator")
+  aiAgentsCreated AiAgent[]      @relation("AiAgentCreator")
+  agentDrafts     AgentDraft[]    @relation("AgentDraftCreator")
+  builderSessions AgentBuilderSession[] @relation("AgentBuilderUser")
+  agentVersions   AiAgentVersion[] @relation("AgentVersionCreator")
+  agentHandoffs   AiAgentSession[] @relation("AgentSessionHandoff")
 }
 
 model Tenant {
-  id          String             @id @default(cuid())
-  name        String
-  slug        String             @unique
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  members     TenantMember[]
-  roles       Role[]
-  instances   WhatsappInstance[]
-  conversations Conversation[]
-  messages    Message[]
-  webhookEvents WebhookEvent[]
+  id               String             @id @default(cuid())
+  name             String
+  slug             String             @unique
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  members          TenantMember[]
+  roles            Role[]
+  instances        WhatsappInstance[]
+  conversations    Conversation[]
+  messages         Message[]
+  webhookEvents    WebhookEvent[]
   webhookEndpoints WebhookEndpoint[]
-  contacts    Contact[]
-  auditLogs   AuditLog[]
+  contacts         Contact[]
+  contactGroups    ContactGroup[]
+  dataSheets       DataSheet[]
+  blastCampaigns   BlastCampaign[]
+  auditLogs        AuditLog[]
+  apiKeys          ApiKey[]
+  automationRules  AutomationRule[]
+  aiProviders      AiProvider[]
+  aiAgents         AiAgent[]
+  aiAgentInstances AiAgentInstance[]
+  aiAgentTargets   AiAgentTarget[]
+  aiAgentSessions  AiAgentSession[]
+  aiAgentExecutions AiAgentExecution[]
+  agentKnowledgeSources AgentKnowledgeSource[]
+  agentDrafts      AgentDraft[]
+  agentBuilderSessions AgentBuilderSession[]
+  agentEvaluationCases AgentEvaluationCase[]
+  aiAgentVersions AiAgentVersion[]
+}
+
+model ApiKey {
+  id              String    @id @default(cuid())
+  tenantId        String
+  createdByUserId String
+  name            String
+  prefix          String
+  keyHash         String    @unique
+  permissions     String[]
+  expiresAt       DateTime?
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy       User      @relation("ApiKeyCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, revokedAt, expiresAt])
+}
+
+model DataSheet {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  source      String   @default("upload")
+  fields      Json
+  rows        Json
+  recordCount Int      @default(0)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agentKnowledgeSources AgentKnowledgeSource[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId, updatedAt])
 }
 
 model TenantMember {
@@ -73,6 +237,7 @@ model TenantMember {
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   roles     MemberRole[]
   createdAt DateTime     @default(now())
+
   @@unique([tenantId, userId])
   @@index([userId])
 }
@@ -85,6 +250,7 @@ model Role {
   tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   members     MemberRole[]
   permissions RolePermission[]
+
   @@unique([tenantId, name])
 }
 
@@ -100,6 +266,7 @@ model MemberRole {
   roleId   String
   member   TenantMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   role     Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
   @@id([memberId, roleId])
 }
 
@@ -108,76 +275,557 @@ model RolePermission {
   permissionId String
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
   @@id([roleId, permissionId])
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
   userId    String
   expiresAt DateTime
   revokedAt DateTime?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
   @@index([userId, expiresAt])
 }
 
 model WhatsappInstance {
-  id          String         @id @default(cuid())
-  tenantId    String
-  name        String
-  wahaSession String
-  engine      String   @default("NOWEB")
-  status      InstanceStatus @default(CREATED)
-  phoneNumber String?
+  id                String           @id @default(cuid())
+  tenantId          String
+  name              String
+  wahaSession       String
+  engine            String           @default("NOWEB")
+  status            InstanceStatus   @default(CREATED)
+  phoneNumber       String?
   webhookEndpointId String?
-  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  webhookEndpoint WebhookEndpoint? @relation(fields: [webhookEndpointId], references: [id], onDelete: SetNull)
-  conversations Conversation[]
-  webhookEvents WebhookEvent[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  tenant            Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  webhookEndpoint   WebhookEndpoint? @relation(fields: [webhookEndpointId], references: [id], onDelete: SetNull)
+  conversations     Conversation[]
+  blastCampaigns    BlastCampaign[]
+  webhookEvents     WebhookEvent[]
+  automationRules   AutomationRule[]
+  aiAgentAssignments AiAgentInstance[]
+  aiAgentTargets     AiAgentTarget[]
+  aiAgentSessions    AiAgentSession[]
+  aiAgentExecutions  AiAgentExecution[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
   @@unique([tenantId, name])
   @@unique([wahaSession])
   @@index([tenantId, status])
 }
 
-model WebhookEndpoint {
-  id          String             @id @default(cuid())
+model AutomationRule {
+  id              String                @id @default(cuid())
+  tenantId        String
+  instanceId      String?
+  name            String
+  trigger         String
+  keyword         String                @default("")
+  response        String
+  enabled         Boolean               @default(true)
+  priority        Int                   @default(0)
+  cooldownSeconds Int                   @default(5)
+  responseMode    String                @default("STATIC")
+  aiProviderId    String?
+  aiModel         String?
+  systemPrompt    String?
+  temperature     Float                 @default(0.7)
+  maxTokens       Int                   @default(500)
+  historyLimit    Int                   @default(10)
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instance        WhatsappInstance?     @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  aiProvider      AiProvider?           @relation(fields: [aiProviderId], references: [id], onDelete: SetNull)
+  executions      AutomationExecution[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([tenantId, enabled, priority])
+  @@index([instanceId, enabled])
+  @@index([aiProviderId])
+}
+
+model AiProvider {
+  id               String                 @id @default(cuid())
+  tenantId         String
+  name             String
+  prefix           String
+  protocol         String
+  baseUrl          String
+  defaultModel     String?
+  enabled          Boolean                @default(true)
+  roundRobin       Boolean                @default(true)
+  credentialCursor Int                    @default(0)
+  tenant           Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  credentials      AiProviderCredential[]
+  models           AiProviderModel[]
+  automationRules  AutomationRule[]
+  aiAgents         AiAgent[]
+  aiAgentExecutions AiAgentExecution[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@unique([tenantId, prefix])
+  @@index([tenantId, enabled])
+}
+
+model AiProviderCredential {
+  id            String     @id @default(cuid())
+  providerId    String
+  label         String
+  encryptedKey  String
+  encryptionIv  String
+  authTag       String
+  keyHint       String
+  enabled       Boolean    @default(true)
+  lastStatus    String     @default("UNCHECKED")
+  lastError     String?
+  lastLatencyMs Int?
+  lastCheckedAt DateTime?
+  provider      AiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([providerId, enabled])
+}
+
+model AiProviderModel {
+  id         String     @id @default(cuid())
+  providerId String
+  modelId    String
+  label      String?
+  enabled    Boolean    @default(true)
+  provider   AiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([providerId, modelId])
+  @@index([providerId, enabled])
+}
+
+model AiAgent {
+  id                       String                     @id @default(cuid())
+  tenantId                 String
+  createdByUserId          String?
+  aiProviderId             String
+  name                     String
+  description              String?
+  scope                    AiAgentScope               @default(GLOBAL)
+  activationMode           AiAgentActivationMode      @default(KEYWORD)
+  enabled                  Boolean                    @default(false)
+  priority                 Int                        @default(100)
+  allInstances             Boolean                    @default(false)
+  aiModel                  String?
+  systemPrompt             String                     @default("")
+  agentPrompt              String                     @default("")
+  fallbackResponse         String                     @default("")
+  temperature              Float                      @default(0.7)
+  maxTokens                Int                        @default(500)
+  historyLimit             Int                        @default(10)
+  sessionTtlSeconds        Int                        @default(1800)
+  extendSessionOnMessage   Boolean                    @default(true)
+  activationMatchType      AiAgentMatchType           @default(EXACT)
+  activationKeywords       String[]                   @default([])
+  deactivationMatchType    AiAgentMatchType           @default(EXACT)
+  deactivationKeywords     String[]                   @default(["/stop-ai"])
+  consumeActivationMessage Boolean                    @default(true)
+  includePreviousContext   Boolean                    @default(false)
+  openingMessage           String?
+  closingMessage           String?
+  groupResponseMode        AiAgentGroupResponseMode   @default(MENTION_ONLY)
+  groupMemoryMode          AiAgentGroupMemoryMode     @default(PER_MEMBER)
+  scopeContract            Json                       @default("{}")
+  memoryPolicy             Json                       @default("{}")
+  currentVersion           Int                        @default(1)
+  tenant                   Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy                User?                      @relation("AiAgentCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  aiProvider               AiProvider                 @relation(fields: [aiProviderId], references: [id], onDelete: Restrict)
+  instances                AiAgentInstance[]
+  targets                  AiAgentTarget[]
+  sessions                 AiAgentSession[]
+  knowledge                AiAgentKnowledge[]
+  executions               AiAgentExecution[]
+  evaluationCases          AgentEvaluationCase[]
+  versions                 AiAgentVersion[]
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+
+  @@index([tenantId, enabled, priority])
+  @@index([tenantId, scope, activationMode])
+  @@index([aiProviderId])
+}
+
+model AiAgentInstance {
+  agentId    String
+  instanceId String
+  tenantId   String
+  agent      AiAgent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  instance   WhatsappInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime         @default(now())
+
+  @@id([agentId, instanceId])
+  @@index([tenantId, instanceId])
+}
+
+model AiAgentTarget {
+  id          String            @id @default(cuid())
   tenantId    String
-  name        String
-  url         String
-  secret      String?
-  events      String[]           @default(["message", "message.any", "message.ack", "session.status"])
-  isDefault   Boolean            @default(false)
-  enabled     Boolean            @default(true)
-  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  instances   WhatsappInstance[]
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  agentId     String
+  instanceId  String?
+  targetType  AiAgentTargetType
+  targetKey   String
+  displayName String?
+  metadata    Json              @default("{}")
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent       AiAgent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  instance    WhatsappInstance? @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([agentId, targetType, targetKey])
+  @@index([tenantId, targetType, targetKey])
+  @@index([instanceId])
+}
+
+model AiAgentSession {
+  id             String               @id @default(cuid())
+  tenantId       String
+  agentId        String
+  instanceId     String
+  chatId         String
+  participantId  String?
+  scopeKey       String
+  activeScopeKey String?              @unique
+  status         AiAgentSessionStatus @default(ACTIVE)
+  activatedBy    AiAgentActivatedBy
+  memorySummary  String?
+  handoffUserId  String?
+  activatedAt    DateTime             @default(now())
+  lastActivityAt DateTime             @default(now())
+  expiresAt      DateTime?
+  handedOffAt    DateTime?
+  closedAt       DateTime?
+  tenant         Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent          AiAgent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  instance       WhatsappInstance     @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  handoffUser    User?                @relation("AgentSessionHandoff", fields: [handoffUserId], references: [id], onDelete: SetNull)
+  executions     AiAgentExecution[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([tenantId, instanceId, chatId, status])
+  @@index([agentId, status, expiresAt])
+}
+
+model AgentKnowledgeSource {
+  id               String             @id @default(cuid())
+  tenantId         String
+  dataSheetId      String?
+  name             String
+  type             AgentKnowledgeType
+  enabled          Boolean            @default(true)
+  config           Json               @default("{}")
+  encryptedSecret  String?
+  encryptionIv     String?
+  authTag          String?
+  refreshMode      String             @default("MANUAL")
+  refreshIntervalSeconds Int?
+  cachedContent    Json?
+  contentVersion   Int                @default(0)
+  lastStatus       String             @default("UNCHECKED")
+  lastError        String?
+  lastSyncedAt     DateTime?
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dataSheet        DataSheet?         @relation(fields: [dataSheetId], references: [id], onDelete: SetNull)
+  agents           AiAgentKnowledge[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([tenantId, type, enabled])
+  @@index([dataSheetId])
+}
+
+model AiAgentKnowledge {
+  agentId          String
+  knowledgeSourceId String
+  priority         Int                  @default(100)
+  maxRows          Int                  @default(50)
+  maxCharacters    Int                  @default(12000)
+  filterTemplate   String?
+  agent             AiAgent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  knowledgeSource   AgentKnowledgeSource  @relation(fields: [knowledgeSourceId], references: [id], onDelete: Cascade)
+  createdAt         DateTime              @default(now())
+
+  @@id([agentId, knowledgeSourceId])
+  @@index([knowledgeSourceId])
+}
+
+model AiAgentExecution {
+  id                 String                 @id @default(cuid())
+  tenantId           String
+  agentId            String
+  sessionId          String?
+  instanceId         String
+  aiProviderId       String?
+  chatId             String
+  inboundMessageId   String
+  outboundMessageId  String?
+  status             AiAgentExecutionStatus @default(PROCESSING)
+  model              String?
+  credentialHint     String?
+  inputTokens        Int?
+  outputTokens       Int?
+  latencyMs          Int?
+  scopeDecision      Json?
+  knowledgeTrace     Json?
+  errorCode          String?
+  error               String?
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent               AiAgent                @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  session             AiAgentSession?        @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  instance            WhatsappInstance       @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  aiProvider          AiProvider?            @relation(fields: [aiProviderId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@unique([tenantId, inboundMessageId])
+  @@index([agentId, chatId, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([sessionId])
+}
+
+model AgentDraft {
+  id              String           @id @default(cuid())
+  tenantId        String
+  createdByUserId String?
+  name            String
+  status          AgentDraftStatus @default(DRAFT)
+  config          Json             @default("{}")
+  approvedAt      DateTime?
+  convertedAgentId String?
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy       User?            @relation("AgentDraftCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  builderSessions AgentBuilderSession[]
+  evaluationCases AgentEvaluationCase[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([tenantId, status, updatedAt])
+}
+
+model AgentBuilderSession {
+  id          String                    @id @default(cuid())
+  tenantId    String
+  draftId     String?
+  userId      String?
+  status      AgentBuilderSessionStatus @default(ACTIVE)
+  currentStep String?
+  summary     String?
+  tenant      Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  draft       AgentDraft?               @relation(fields: [draftId], references: [id], onDelete: SetNull)
+  user        User?                     @relation("AgentBuilderUser", fields: [userId], references: [id], onDelete: SetNull)
+  messages    AgentBuilderMessage[]
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  @@index([tenantId, status, updatedAt])
+  @@index([draftId])
+}
+
+model AgentBuilderMessage {
+  id        String              @id @default(cuid())
+  sessionId String
+  role      String
+  content   String
+  metadata  Json                @default("{}")
+  session   AgentBuilderSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime            @default(now())
+
+  @@index([sessionId, createdAt])
+}
+
+model AgentEvaluationCase {
+  id           String                @id @default(cuid())
+  tenantId     String
+  agentId      String?
+  draftId      String?
+  name         String
+  input        Json
+  expected     Json
+  status       AgentEvaluationStatus @default(PENDING)
+  lastResult   Json?
+  lastRunAt    DateTime?
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent        AiAgent?              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  draft        AgentDraft?           @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([tenantId, status])
+  @@index([agentId])
+  @@index([draftId])
+}
+
+model AiAgentVersion {
+  id              String   @id @default(cuid())
+  tenantId        String
+  agentId         String
+  createdByUserId String?
+  version         Int
+  config          Json
+  changeNote      String?
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent           AiAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  createdBy       User?    @relation("AgentVersionCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+
+  @@unique([agentId, version])
+  @@index([tenantId, createdAt])
+}
+
+model AutomationExecution {
+  id                String         @id @default(cuid())
+  tenantId          String
+  instanceId        String
+  ruleId            String
+  chatId            String
+  inboundMessageId  String
+  outboundMessageId String?
+  status            String         @default("PROCESSING")
+  error             String?
+  rule              AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([ruleId, inboundMessageId])
+  @@index([ruleId, chatId, createdAt])
+  @@index([tenantId, createdAt])
+}
+
+model WebhookEndpoint {
+  id        String             @id @default(cuid())
+  tenantId  String
+  name      String
+  url       String
+  secret    String?
+  events    String[]           @default(["message", "message.any", "message.ack", "session.status"])
+  isDefault Boolean            @default(false)
+  enabled   Boolean            @default(true)
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instances WhatsappInstance[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
   @@unique([tenantId, name])
   @@index([tenantId, isDefault])
 }
 
 model Contact {
-  id        String   @id @default(cuid())
-  tenantId  String
-  name      String
-  phone     String
-  email     String?
-  company   String?
-  notes     String?
-  tags      String[] @default([])
-  source    String   @default("manual")
-  wahaId    String?
-  groupId   String?
-  groupName String?
+  id               String               @id @default(cuid())
+  tenantId         String
+  name             String
+  phone            String
+  email            String?
+  company          String?
+  notes            String?
+  tags             String[]             @default([])
+  customFields     Json?
+  source           String               @default("manual")
+  wahaId           String?
+  groupId          String?
+  groupName        String?
   sourceInstanceId String?
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tenant           Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  groupMemberships ContactGroupMember[]
+  blastRecipients  BlastRecipient[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
   @@unique([tenantId, phone])
   @@index([tenantId, name])
+}
+
+model ContactGroup {
+  id          String               @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  color       String?
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members     ContactGroupMember[]
+  campaigns   BlastCampaignGroup[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId, updatedAt])
+}
+
+model ContactGroupMember {
+  groupId   String
+  contactId String
+  group     ContactGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  contact   Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@id([groupId, contactId])
+  @@index([contactId])
+}
+
+model BlastCampaign {
+  id          String               @id @default(cuid())
+  tenantId    String
+  name        String
+  body        String
+  status      BlastStatus          @default(DRAFT)
+  instanceId  String
+  delayMs     Int                  @default(1500)
+  batchSize   Int                  @default(20)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  error       String?
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instance    WhatsappInstance     @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  groups      BlastCampaignGroup[]
+  recipients  BlastRecipient[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([tenantId, status, createdAt])
+}
+
+model BlastCampaignGroup {
+  campaignId String
+  groupId    String
+  campaign   BlastCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  group      ContactGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, groupId])
+  @@index([groupId])
+}
+
+model BlastRecipient {
+  id         String               @id @default(cuid())
+  campaignId String
+  contactId  String
+  position   Int                  @default(0)
+  phone      String
+  name       String
+  status     BlastRecipientStatus @default(PENDING)
+  error      String?
+  messageId  String?
+  queuedAt   DateTime?
+  sentAt     DateTime?
+  campaign   BlastCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact    Contact              @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contactId])
+  @@index([campaignId, status])
 }
 
 model Conversation {
@@ -191,6 +839,7 @@ model Conversation {
   messages   Message[]
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
+
   @@unique([instanceId, chatId])
   @@index([tenantId, updatedAt])
 }
@@ -207,9 +856,10 @@ model Message {
   tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   createdAt      DateTime         @default(now())
+
+  @@unique([tenantId, wahaMessageId])
   @@index([tenantId, createdAt])
   @@index([conversationId, createdAt])
-  @@unique([tenantId, wahaMessageId])
 }
 
 model WebhookEvent {
@@ -223,6 +873,7 @@ model WebhookEvent {
   tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   instance    WhatsappInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   createdAt   DateTime         @default(now())
+
   @@index([tenantId, createdAt])
   @@index([instanceId, createdAt])
 }
@@ -237,5 +888,6 @@ model AuditLog {
   tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
+
   @@index([tenantId, createdAt])
 }

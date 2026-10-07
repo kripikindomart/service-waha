@@ -17,3 +17,5 @@ nav span { cursor: pointer; user-select: none; }
 .gateway-dark .text-slate-900 { color: #f8fafc !important; }
 .gateway-dark .text-slate-600, .gateway-dark .text-slate-500, .gateway-dark .text-slate-400 { color: #aab7cc !important; }
 .gateway-dark .border-slate-200, .gateway-dark .border-slate-100 { border-color: #293953 !important; }
+.overflow-auto > table { min-width: 900px; }
+[contenteditable="true"] { direction: ltr; text-align: left; unicode-bidi: plaintext; }

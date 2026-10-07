@@ -3,6 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from './prisma.service';
 import { AuthUser } from './auth.types';
+import { htmlToWhatsApp } from './message-format';
 
 export function normalizeChatId(value: string) {
   const input = value.trim();
@@ -20,7 +21,7 @@ export class MessagesService {
     if (!instance) throw new NotFoundException('instance_not_found');
     const normalizedChatId = normalizeChatId(chatId);
     const conversation = await this.db.conversation.upsert({ where: { instanceId_chatId: { instanceId, chatId: normalizedChatId } }, update: {}, create: { tenantId: user.tenantId, instanceId, chatId: normalizedChatId } });
-    const message = await this.db.message.create({ data: { tenantId: user.tenantId, conversationId: conversation.id, direction: 'OUTBOUND', body, status: 'PENDING' } });
+    const message = await this.db.message.create({ data: { tenantId: user.tenantId, conversationId: conversation.id, direction: 'OUTBOUND', body: htmlToWhatsApp(body), status: 'PENDING' } });
     await this.queue.add('send-text', { messageId: message.id }, { attempts: 5, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 1000, removeOnFail: 5000 });
     return { id: message.id, status: message.status };
   }
